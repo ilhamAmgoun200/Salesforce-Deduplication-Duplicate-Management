@@ -81,7 +81,7 @@ jobs:
             --client-id ${{ secrets.DEVHUB_CLIENT_ID }} \
             --jwt-key-file devhub-key.txt \
             --username ${{ secrets.DEVHUB_USERNAME }} \
-            --instance-url https://login.salesforce.com \
+            --instance-url https://orgfarm-6f20efa035-dev-ed.develop.salesforce.com \
             --set-default-dev-hub \
             --alias DevHub
           rm devhub-key.txt
