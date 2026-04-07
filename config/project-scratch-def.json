@@ -1,6 +1,6 @@
 {
-  "orgName": "Demo company",
-  "edition": "Developer",
+  "orgName": "CI Scratch Org",
+  "edition": "developer",
   "features": ["EnableSetPasswordInApi"],
   "settings": {
     "lightningExperienceSettings": {

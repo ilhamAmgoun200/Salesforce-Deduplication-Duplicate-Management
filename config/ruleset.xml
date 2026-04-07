@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<ruleset name="Apex Rules"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+
+    <description>Custom ruleset for Apex CI/CD</description>
+
+    <!-- Best Practices -->
+    <rule ref="category/apex/bestpractices.xml/ApexUnitTestClassShouldHaveAsserts" />
+    <rule ref="category/apex/bestpractices.xml/ApexUnitTestShouldNotUseSeeAllDataTrue" />
+    <rule ref="category/apex/bestpractices.xml/AvoidGlobalModifier" />
+
+    <!-- Error Prone -->
+    <rule ref="category/apex/errorprone.xml/AvoidDirectAccessTriggerMap" />
+    <rule ref="category/apex/errorprone.xml/EmptyCatchBlock" />
+    <rule ref="category/apex/errorprone.xml/EmptyStatementBlock" />
+
+    <!-- Performance -->
+    <rule ref="category/apex/performance.xml/AvoidSoqlInLoops" />
+    <rule ref="category/apex/performance.xml/AvoidSoslInLoops" />
+    <rule ref="category/apex/performance.xml/AvoidDmlStatementsInLoops" />
+
+    <!-- Security -->
+    <rule ref="category/apex/security.xml/ApexSharingViolations" />
+    <rule ref="category/apex/security.xml/ApexSOQLInjection" />
+    <rule ref="category/apex/security.xml/ApexXSSFromURLParam" />
+
+</ruleset>

@@ -1,0 +1,165 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'force-app/**'
+
+env:
+  SF_USE_GENERIC_UNIX_KEYCHAIN: true
+  SF_DOMAIN_RETRY: 300
+  SF_LOG_LEVEL: DEBUG
+
+jobs:
+  # ─────────────────────────────────────────
+  # JOB 1 : PMD Check (vérif finale avant prod)
+  # ─────────────────────────────────────────
+  pmd-check:
+    name: PMD Final Check
+    runs-on: ubuntu-latest
+    permissions: read-all
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run PMD
+        uses: pmd/pmd-github-action@v2
+        with:
+          rulesets: 'config/ruleset.xml'
+          sourcePath: 'force-app/main/default'
+          version: latest
+          analyzeModifiedFilesOnly: false   # Analyse complète avant prod
+          createGitHubAnnotations: true
+          uploadSarifReport: false
+
+  # ─────────────────────────────────────────
+  # JOB 2 : Validate + Quick Deploy en Production
+  # ─────────────────────────────────────────
+  deploy-production:
+    name: Deploy to Production Org
+    runs-on: ubuntu-latest
+    needs: pmd-check   # Lance seulement si PMD passe
+
+    steps:
+      # 1. Checkout
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. Install Salesforce CLI
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli
+          sf --version
+
+      # 4. Install SFDX Git Delta
+      - name: Install SFDX Git Delta
+        run: |
+          echo y | sf plugins install sfdx-git-delta
+
+      # 5. Auth Production via JWT
+      - name: Create Production JWT Key File
+        run: |
+          echo "${{ secrets.SF_JWT_KEY }}" > prod-key.txt
+          chmod 600 prod-key.txt
+
+      - name: Authenticate Production Org
+        run: |
+          sf org login jwt \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file prod-key.txt \
+            --username ${{ secrets.SF_USERNAME }} \
+            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
+            --alias ProdOrg \
+            --set-default
+          rm prod-key.txt
+
+      - name: Verify Production Auth
+        run: sf org display --target-org ProdOrg
+
+      # 6. Generate Delta Package avec SGD
+      - name: Generate Delta Package (SGD)
+        run: |
+          # Récupère le SHA du commit précédent sur main
+          PREVIOUS_SHA="${{ github.event.before }}"
+          CURRENT_SHA="${{ github.sha }}"
+
+          echo "Delta from $PREVIOUS_SHA to $CURRENT_SHA"
+          mkdir -p delta
+
+          sf sgd:source:delta \
+            --to "$CURRENT_SHA" \
+            --from "$PREVIOUS_SHA" \
+            --output-dir delta \
+            --generate-delta
+
+          echo "=== package.xml généré ==="
+          cat delta/package/package.xml || echo "Aucun package.xml généré"
+
+          # Si rien n'a changé, skip
+          if [ ! -f "delta/package/package.xml" ] || [ ! -s "delta/package/package.xml" ]; then
+            echo "SKIP_DEPLOYMENT=true" >> $GITHUB_ENV
+          else
+            echo "SKIP_DEPLOYMENT=false" >> $GITHUB_ENV
+          fi
+
+      # 7. Validate Deployment (Check Only - génère un ID)
+      - name: Validate Deployment
+        id: validate_step
+        if: env.SKIP_DEPLOYMENT == 'false'
+        run: |
+          echo "Validation en cours..."
+
+          VALIDATION_RESULT=$(sf project deploy validate \
+            --manifest delta/package/package.xml \
+            --target-org ProdOrg \
+            --test-level RunLocalTests \
+            --wait 60 \
+            --json)
+
+          echo "$VALIDATION_RESULT"
+
+          DEPLOY_ID=$(echo "$VALIDATION_RESULT" | jq -r '.result.id')
+          echo "validation_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+          echo "Validation ID: $DEPLOY_ID"
+
+      # 8. Quick Deploy avec l'ID de validation
+      - name: Quick Deploy to Production
+        if: success() && steps.validate_step.outputs.validation_id != ''
+        run: |
+          echo "Quick Deploy ID: ${{ steps.validate_step.outputs.validation_id }}"
+
+          sf project deploy quick \
+            --deploy-id ${{ steps.validate_step.outputs.validation_id }} \
+            --target-org ProdOrg \
+            --wait 60 \
+            --verbose
+
+      # 9. Upload résultats de déploiement
+      - name: Upload Deploy Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-results-production
+          path: |
+            delta/package/package.xml
+
+      # 10. Confirmation
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "✅ Déploiement en production réussi !"
+          echo "Branch : main"
+          echo "Commit : ${{ github.sha }}"
+          echo "Déclenché par : ${{ github.actor }}"
