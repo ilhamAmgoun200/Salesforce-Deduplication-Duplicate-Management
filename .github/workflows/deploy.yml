@@ -106,6 +106,7 @@ jobs:
             echo "SKIP_DEPLOYMENT=false" >> $GITHUB_ENV
           fi
 
+      # ✅ Validation avec affichage erreur complète
       - name: Validate Deployment
         id: validate_step
         if: env.SKIP_DEPLOYMENT == 'false'
@@ -117,15 +118,23 @@ jobs:
             --target-org ProdOrg \
             --test-level RunLocalTests \
             --wait 60 \
-            --json)
+            --json) || true
 
           echo "$VALIDATION_RESULT"
+
+          STATUS=$(echo "$VALIDATION_RESULT" | jq -r '.status')
+          echo "Status: $STATUS"
+
+          if [ "$STATUS" != "0" ]; then
+            echo "❌ Erreur de validation :"
+            echo "$VALIDATION_RESULT" | jq -r '.message // .result.details.componentFailures[].problem // empty'
+            exit 1
+          fi
 
           DEPLOY_ID=$(echo "$VALIDATION_RESULT" | jq -r '.result.id')
           echo "validation_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
           echo "Validation ID: $DEPLOY_ID"
 
-      # ✅ --deploy-id remplacé par --job-id
       - name: Quick Deploy to Production
         if: success() && steps.validate_step.outputs.validation_id != ''
         run: |
