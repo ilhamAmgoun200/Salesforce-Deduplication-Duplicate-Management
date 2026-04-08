@@ -115,7 +115,8 @@ jobs:
           VALIDATION_RESULT=$(sf project deploy validate \
             --manifest delta/package/package.xml \
             --target-org ProdOrg \
-            --test-level NoTestRun \
+            --test-level RunSpecifiedTests \
+            --tests HelloWorldTest \
             --wait 60 \
             --json 2>&1) || true
 
