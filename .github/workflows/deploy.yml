@@ -125,13 +125,14 @@ jobs:
           echo "validation_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
           echo "Validation ID: $DEPLOY_ID"
 
+      # ✅ --deploy-id remplacé par --job-id
       - name: Quick Deploy to Production
         if: success() && steps.validate_step.outputs.validation_id != ''
         run: |
           echo "Quick Deploy ID: ${{ steps.validate_step.outputs.validation_id }}"
 
           sf project deploy quick \
-            --deploy-id ${{ steps.validate_step.outputs.validation_id }} \
+            --job-id ${{ steps.validate_step.outputs.validation_id }} \
             --target-org ProdOrg \
             --wait 60 \
             --verbose
