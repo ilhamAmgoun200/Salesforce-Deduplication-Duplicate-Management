@@ -43,40 +43,32 @@ jobs:
   validate-scratch-org:
     name: Validate on Scratch Org
     runs-on: ubuntu-latest
-    needs: pmd-check   # Lance seulement si PMD passe
+    needs: pmd-check
 
     steps:
-      # 1. Checkout
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      # 3. Install Salesforce CLI
       - name: Install Salesforce CLI
         run: |
           npm install -g @salesforce/cli
           sf --version
 
-      # 4. Install SFDX Git Delta
       - name: Install SFDX Git Delta
         run: |
           echo y | sf plugins install sfdx-git-delta
 
-      # 5. Auth Dev Hub via JWT
-      - name: Create Dev Hub JWT Key File
+      - name: Auth Dev Hub via JWT
         run: |
           echo "${{ secrets.DEVHUB_JWT_KEY }}" > devhub-key.txt
           chmod 600 devhub-key.txt
-
-      - name: Authenticate Dev Hub
-        run: |
           sf org login jwt \
             --client-id ${{ secrets.DEVHUB_CLIENT_ID }} \
             --jwt-key-file devhub-key.txt \
@@ -86,20 +78,19 @@ jobs:
             --alias DevHub
           rm devhub-key.txt
 
-      - name: Verify Dev Hub Auth
-        run: sf org display --target-org DevHub
-
-      # 6. Create Scratch Org
-      - name: Create Scratch Org
+      # ✅ Connexion à la scratch org existante my-scratch
+      - name: Authenticate Scratch Org via Auth URL
         run: |
-          sf org create scratch \
-            --definition-file config/project-scratch-def.json \
+          echo "${{ secrets.SCRATCH_ORG_SFDX_AUTH_URL }}" > scratch-auth.txt
+          sf org login sfdx-url \
+            --sfdx-url-file scratch-auth.txt \
             --alias ScratchOrg \
-            --duration-days 1 \
-            --set-default \
-            --wait 15
+            --set-default
+          rm scratch-auth.txt
 
-      # 7. Generate Delta Package with SGD
+      - name: Verify Scratch Org
+        run: sf org display --target-org ScratchOrg
+
       - name: Generate Delta Package (SGD)
         run: |
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
@@ -117,14 +108,12 @@ jobs:
           echo "=== package.xml généré ==="
           cat delta/package/package.xml || echo "Aucun package.xml généré"
 
-          # Si rien n'a changé, skip le déploiement
           if [ ! -f "delta/package/package.xml" ] || [ ! -s "delta/package/package.xml" ]; then
             echo "SKIP_DEPLOYMENT=true" >> $GITHUB_ENV
           else
             echo "SKIP_DEPLOYMENT=false" >> $GITHUB_ENV
           fi
 
-      # 8. Deploy delta to Scratch Org
       - name: Deploy to Scratch Org
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
@@ -133,7 +122,6 @@ jobs:
             --target-org ScratchOrg \
             --wait 30
 
-      # 9. Run Apex Tests
       - name: Run Apex Tests
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
@@ -144,7 +132,6 @@ jobs:
             --output-dir test-results \
             --wait 20
 
-      # 10. Upload test results as artifact
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -152,10 +139,4 @@ jobs:
           name: apex-test-results-pr
           path: test-results/
 
-      # 11. Cleanup - Delete Scratch Org (toujours)
-      - name: Delete Scratch Org
-        if: always()
-        run: |
-          sf org delete scratch \
-            --target-org ScratchOrg \
-            --no-prompt
+      # ✅ Aucune suppression — la scratch org my-scratch reste intacte
