@@ -17,9 +17,7 @@
     <rule ref="category/apex/errorprone.xml/EmptyStatementBlock" />
 
     <!-- Performance -->
-    <rule ref="category/apex/performance.xml/AvoidSoqlInLoops" />
-    <rule ref="category/apex/performance.xml/AvoidSoslInLoops" />
-    <rule ref="category/apex/performance.xml/AvoidDmlStatementsInLoops" />
+    <rule ref="category/apex/performance.xml/OperationWithHighCostInLoop" />
 
     <!-- Security -->
     <rule ref="category/apex/security.xml/ApexSharingViolations" />
