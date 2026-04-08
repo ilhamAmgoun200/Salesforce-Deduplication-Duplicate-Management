@@ -10,5 +10,5 @@ public with sharing class HelloWorld {
     public static Integer add(Integer a, Integer b) {
         return a + b;
     }
-    // version 3.0
+    // version 4.0
 }
