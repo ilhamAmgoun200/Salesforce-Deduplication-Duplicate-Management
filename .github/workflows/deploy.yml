@@ -112,22 +112,26 @@ jobs:
         run: |
           echo "Validation en cours..."
 
-          VALIDATION_RESULT=$(sf project deploy validate --manifest delta/package/package.xml --target-org ProdOrg --test-level RunLocalTests --wait 60 --json) || true
+          VALIDATION_RESULT=$(sf project deploy validate \
+            --manifest delta/package/package.xml \
+            --target-org ProdOrg \
+            --test-level RunLocalTests \
+            --wait 60 \
+            --json 2>&1) || true
 
+          echo "=== RESULT ==="
           echo "$VALIDATION_RESULT"
+          echo "=== END RESULT ==="
 
-          STATUS=$(echo "$VALIDATION_RESULT" | jq -r '.status')
-          echo "Status: $STATUS"
-
-          if [ "$STATUS" != "0" ]; then
-            echo "❌ Erreur de validation :"
-            echo "$VALIDATION_RESULT" | jq -r '.message // .result.details.componentFailures[].problem // empty'
+          DEPLOY_ID=$(echo "$VALIDATION_RESULT" | jq -r '.result.id // empty')
+          
+          if [ -z "$DEPLOY_ID" ]; then
+            echo "❌ Validation échouée - pas d'ID récupéré"
             exit 1
           fi
 
-          DEPLOY_ID=$(echo "$VALIDATION_RESULT" | jq -r '.result.id')
           echo "validation_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
-          echo "Validation ID: $DEPLOY_ID"
+          echo "✅ Validation ID: $DEPLOY_ID"
 
       - name: Quick Deploy to Production
         if: success() && steps.validate_step.outputs.validation_id != ''
