@@ -24,6 +24,6 @@ private class HelloWorldTest {
         Integer result = HelloWorld.add(3, 7);
         Assert.areEqual(10, result, 'Should add two numbers');
     }
-        // version 5.0
+        // version 6.0
 
 }

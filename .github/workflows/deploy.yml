@@ -12,9 +12,6 @@ env:
   SF_LOG_LEVEL: DEBUG
 
 jobs:
-  # ─────────────────────────────────────────
-  # JOB 1 : PMD Check
-  # ─────────────────────────────────────────
   pmd-check:
     name: PMD Final Check
     runs-on: ubuntu-latest
@@ -36,9 +33,6 @@ jobs:
           createGitHubAnnotations: true
           uploadSarifReport: false
 
-  # ─────────────────────────────────────────
-  # JOB 2 : Deploy en Production
-  # ─────────────────────────────────────────
   deploy-production:
     name: Deploy to Production Org
     runs-on: ubuntu-latest
@@ -106,44 +100,17 @@ jobs:
             echo "SKIP_DEPLOYMENT=false" >> $GITHUB_ENV
           fi
 
-      - name: Validate Deployment
-        id: validate_step
+      # ✅ Deploy tout le dossier classes ensemble
+      - name: Deploy to Production
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
-          echo "Validation en cours..."
-
-          VALIDATION_RESULT=$(sf project deploy validate \
-            --manifest delta/package/package.xml \
+          sf project deploy start \
+            --source-dir force-app/main/default/classes \
             --target-org ProdOrg \
             --test-level RunSpecifiedTests \
             --tests HelloWorldTest \
-            --wait 60 \
-            --json 2>&1) || true
-
-          echo "=== RESULT ==="
-          echo "$VALIDATION_RESULT"
-          echo "=== END RESULT ==="
-
-          DEPLOY_ID=$(echo "$VALIDATION_RESULT" | jq -r '.result.id // empty')
-
-          if [ -z "$DEPLOY_ID" ]; then
-            echo "❌ Validation échouée - pas d'ID récupéré"
-            exit 1
-          fi
-
-          echo "validation_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
-          echo "✅ Validation ID: $DEPLOY_ID"
-
-      - name: Quick Deploy to Production
-        if: success() && steps.validate_step.outputs.validation_id != ''
-        run: |
-          echo "Quick Deploy ID: ${{ steps.validate_step.outputs.validation_id }}"
-
-          sf project deploy quick \
-            --job-id ${{ steps.validate_step.outputs.validation_id }} \
-            --target-org ProdOrg \
-            --wait 60 \
-            --verbose
+            --ignore-conflicts \
+            --wait 60
 
       - name: Upload Deploy Results
         if: always()
