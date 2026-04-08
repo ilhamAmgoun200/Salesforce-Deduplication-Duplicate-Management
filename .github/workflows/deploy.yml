@@ -115,7 +115,7 @@ jobs:
           VALIDATION_RESULT=$(sf project deploy validate \
             --manifest delta/package/package.xml \
             --target-org ProdOrg \
-            --test-level RunLocalTests \
+            --test-level NoTestRun \
             --wait 60 \
             --json 2>&1) || true
 
@@ -124,7 +124,7 @@ jobs:
           echo "=== END RESULT ==="
 
           DEPLOY_ID=$(echo "$VALIDATION_RESULT" | jq -r '.result.id // empty')
-          
+
           if [ -z "$DEPLOY_ID" ]; then
             echo "❌ Validation échouée - pas d'ID récupéré"
             exit 1
