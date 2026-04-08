@@ -120,6 +120,7 @@ jobs:
           sf project deploy start \
             --manifest delta/package/package.xml \
             --target-org ScratchOrg \
+            --ignore-conflicts \
             --wait 30
 
       - name: Run Apex Tests
