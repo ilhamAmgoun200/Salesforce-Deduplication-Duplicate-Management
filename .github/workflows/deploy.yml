@@ -69,7 +69,7 @@ jobs:
             --client-id ${{ secrets.SF_CLIENT_ID }} \
             --jwt-key-file prod-key.txt \
             --username ${{ secrets.SF_USERNAME }} \
-            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
+            --instance-url ${{ secrets.SF_INSTANCE_URL_P }} \
             --alias ProdOrg \
             --set-default
           rm prod-key.txt
