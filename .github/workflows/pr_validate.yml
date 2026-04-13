@@ -127,6 +127,7 @@ jobs:
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
           sf apex run test \
+            --test-level RunLocalTests \
             --target-org ScratchOrg \
             --code-coverage \
             --result-format human \
