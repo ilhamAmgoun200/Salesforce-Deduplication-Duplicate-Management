@@ -105,11 +105,9 @@ jobs:
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
           sf project deploy start \
-            --source-dir force-app/main/default/classes \
+            --manifest delta/package/package.xml \
             --target-org ProdOrg \
-            --test-level RunSpecifiedTests \
-            --tests HelloWorldTest \
-            --ignore-conflicts \
+            --test-level RunLocalTests \
             --wait 60
 
       - name: Upload Deploy Results
