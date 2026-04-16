@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MatchingRule__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>MatchingRule</label>
+    <referenceTo>ADM_MatchingRule__c</referenceTo>
+    <relationshipLabel>ADM MatchingRuleItems</relationshipLabel>
+    <relationshipName>ADM_MatchingRuleItems</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>
