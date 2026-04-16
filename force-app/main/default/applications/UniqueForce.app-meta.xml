@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#DD0EE1</headerColor>
+        <logo>uniqueforce_logo</logo>
+        <logoVersion>1</logoVersion>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <description>UniqueForce is a powerful duplicate management package built natively on Salesforce. Unlike the standard duplicate rules limited to a handful of objects, UniqueForce brings advanced deduplication to every standard and custom object in your org.
+With Uniqu</description>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>UniqueForce</label>
+    <navType>Standard</navType>
+    <tabs>Matching_Rules</tabs>
+    <tabs>standard-Account</tabs>
+    <tabs>standard-Contact</tabs>
+    <tabs>standard-Lead</tabs>
+    <uiType>Lightning</uiType>
+    <utilityBar>UniqueForce_UtilityBar</utilityBar>
+</CustomApplication>

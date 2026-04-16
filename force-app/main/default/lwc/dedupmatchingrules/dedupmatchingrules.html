@@ -1,0 +1,330 @@
+<template>
+    <div class="slds-var-p-around_medium">
+
+        <!-- Page Header -->
+        <div class="slds-page-header slds-var-m-bottom_medium">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="utility:rules" size="medium"></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                            <h1 class="slds-page-header__title">Matching Rules</h1>
+                            <p class="slds-page-header__name-meta">{rules.length} règles configurées · {activeRulesCount} actives</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-page-header__col-actions">
+                    <div class="slds-page-header__controls">
+                        <div class="slds-page-header__control">
+                            <lightning-button
+                                variant="brand"
+                                label="Nouvelle règle"
+                                icon-name="utility:add"
+                                onclick={handleNewRule}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="filter-bar slds-var-m-bottom_small">
+            <lightning-combobox
+                label=""
+                placeholder="Tous les objets"
+                options={objectFilterOptions}
+                value={filterObject}
+                onchange={handleObjectFilter}
+                class="filter-select">
+            </lightning-combobox>
+            <lightning-combobox
+                label=""
+                placeholder="Tous les statuts"
+                options={statusFilterOptions}
+                value={filterStatus}
+                onchange={handleStatusFilter}
+                class="filter-select">
+            </lightning-combobox>
+            <lightning-input
+                type="search"
+                label=""
+                placeholder="Rechercher une règle..."
+                value={searchTerm}
+                onchange={handleSearch}
+                class="filter-search">
+            </lightning-input>
+        </div>
+
+        <!-- Rules List -->
+        <template if:true={hasRules}>
+            <div class="rules-list">
+                <template for:each={filteredRules} for:item="rule">
+                    <div key={rule.id} class="rule-card">
+                        <div class="rule-card__header">
+                            <div class="rule-header-left">
+                                <div class="rule-obj-badge" style={rule.objBadgeStyle}>{rule.objectLabel}</div>
+                                <div class="rule-name">{rule.name}</div>
+                                <div class="rule-strategy">{rule.matchStrategyLabel}</div>
+                            </div>
+                            <div class="rule-header-right">
+                                <lightning-badge label={rule.statusLabel} class={rule.statusClass}></lightning-badge>
+                                <lightning-button-icon
+                                    icon-name="utility:edit"
+                                    variant="border-filled"
+                                    size="small"
+                                    title="Modifier"
+                                    data-rule-id={rule.id}
+                                    onclick={handleEditRule}>
+                                </lightning-button-icon>
+                                <lightning-button-icon
+                                    icon-name={rule.toggleIcon}
+                                    variant="border-filled"
+                                    size="small"
+                                    title={rule.toggleTitle}
+                                    data-rule-id={rule.id}
+                                    data-active={rule.isActive}
+                                    onclick={handleToggleRule}>
+                                </lightning-button-icon>
+                                <lightning-button-icon
+                                    icon-name="utility:delete"
+                                    variant="border-filled"
+                                    size="small"
+                                    title="Supprimer"
+                                    data-rule-id={rule.id}
+                                    onclick={handleDeleteRule}>
+                                </lightning-button-icon>
+                            </div>
+                        </div>
+
+                        <!-- Criteria -->
+                        <div class="rule-criteria">
+                            <div class="criteria-label-row">
+                                <span class="criteria-label">Critères de matching</span>
+                                <template if:true={rule.filterLogic}>
+                                    <span class="criteria-logic-badge">{rule.filterLogic}</span>
+                                </template>
+                            </div>
+                            <div class="criteria-list">
+                                <template for:each={rule.criteria} for:item="criterion">
+                                    <!-- AND separator between criteria (not before first) -->
+                                    <template if:true={criterion.showAndSeparator}>
+                                        <div key={criterion.separatorKey} class="and-separator-inline">
+                                            <span class="and-label-inline">ET</span>
+                                        </div>
+                                    </template>
+                                    <div key={criterion.id} class="criterion-item">
+                                        <span class="criterion-order">#{criterion.orderNumber}</span>
+                                        <span class="criterion-field">{criterion.fieldLabel}</span>
+                                        <span class="criterion-op">{criterion.matchType}</span>
+                                        <span class="criterion-weight">{criterion.weightLabel}</span>
+                                        <template if:true={criterion.matchBlankFields}>
+                                            <span class="criterion-blank-badge">Blank ✓</span>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="rule-stats">
+                            <div class="rule-stat">
+                                <span class="stat-value">{rule.matchesFound}</span>
+                                <span class="stat-label">Doublons trouvés</span>
+                            </div>
+                            <div class="rule-stat">
+                                <span class="stat-value">{rule.mergedCount}</span>
+                                <span class="stat-label">Fusionnés</span>
+                            </div>
+                            <div class="rule-stat">
+                                <span class="stat-value">{rule.confidenceLabel}</span>
+                                <span class="stat-label">Seuil de confiance</span>
+                            </div>
+                            <div class="rule-stat">
+                                <span class="stat-value">{rule.lastRunLabel}</span>
+                                <span class="stat-label">Dernier scan</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template if:false={hasRules}>
+            <div class="empty-rules">
+                <lightning-icon icon-name="utility:rules" size="large" variant="inverse"></lightning-icon>
+                <p>Aucune règle de matching configurée.</p>
+                <lightning-button variant="brand" label="Créer ma première règle" onclick={handleNewRule}></lightning-button>
+            </div>
+        </template>
+
+        <!-- Create/Edit Modal -->
+        <template if:true={showModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick={handleCloseModal}>
+                            <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                        </button>
+                        <h2 class="slds-modal__title">{modalTitle}</h2>
+                    </header>
+
+                    <div class="slds-modal__content slds-var-p-around_medium">
+
+                        <!-- Basic Info -->
+                        <div class="slds-form slds-form_stacked">
+                            <lightning-input
+                                label="Nom de la règle"
+                                value={editRule.name}
+                                required
+                                data-field="name"
+                                onchange={handleFieldChange}>
+                            </lightning-input>
+
+                            <lightning-combobox
+                                label="Objet Salesforce"
+                                placeholder="Sélectionner un objet"
+                                options={salesforceObjectOptions}
+                                value={editRule.objectApiName}
+                                required
+                                data-field="objectApiName"
+                                onchange={handleFieldChange}>
+                            </lightning-combobox>
+
+                            <lightning-combobox
+                                label="Stratégie de matching"
+                                placeholder="Sélectionner une stratégie"
+                                options={matchStrategyOptions}
+                                value={editRule.matchStrategy}
+                                data-field="matchStrategy"
+                                onchange={handleFieldChange}>
+                            </lightning-combobox>
+
+                            <lightning-slider
+                                label="Seuil de confiance minimum (%)"
+                                min="50"
+                                max="100"
+                                step="5"
+                                value={editRule.confidenceThreshold}
+                                data-field="confidenceThreshold"
+                                onchange={handleFieldChange}>
+                            </lightning-slider>
+
+                            <lightning-combobox
+                                label="Action automatique"
+                                placeholder="Sélectionner une action"
+                                options={autoActionOptions}
+                                value={editRule.autoAction}
+                                data-field="autoAction"
+                                onchange={handleFieldChange}>
+                            </lightning-combobox>
+                        </div>
+
+                        <!-- Criteria Builder -->
+                        <div class="criteria-builder slds-var-m-top_medium">
+                            <div class="criteria-builder__header">
+                                <span class="criteria-builder__title">Critères de matching</span>
+                                <lightning-button
+                                    label="Ajouter un critère"
+                                    icon-name="utility:add"
+                                    size="small"
+                                    onclick={handleAddCriterion}>
+                                </lightning-button>
+                            </div>
+
+                            <!-- Filter Logic Input -->
+                            <div class="filter-logic-row">
+                                <lightning-input
+                                    label="Logique de filtre personnalisée"
+                                    placeholder="Par défaut : ET entre tous les critères (ex: 1 OR 2 OR 3)"
+                                    value={editRule.filterLogic}
+                                    data-field="filterLogic"
+                                    onchange={handleFieldChange}>
+                                </lightning-input>
+                                <p class="filter-logic-hint">
+                                    Utilisez les numéros de critères avec AND / OR et des parenthèses. Exemple : <strong>(1 AND 2) OR 3</strong>
+                                </p>
+                            </div>
+
+                            <template for:each={editRule.criteria} for:item="criterion" for:index="idx">
+                                <!-- AND separator between criteria (not before first) -->
+                                <template if:true={criterion.showAndSeparator}>
+                                    <div key={criterion.separatorKey} class="and-separator">
+                                        <span class="and-label">ET</span>
+                                    </div>
+                                </template>
+
+                                <div key={criterion.id} class="criterion-builder-row">
+                                    <!-- Order number badge -->
+                                    <div class="criterion-order-badge">{criterion.orderNumber}</div>
+
+                                    <lightning-combobox
+                                        label="Champ"
+                                        placeholder="Champ"
+                                        options={fieldOptions}
+                                        value={criterion.fieldApiName}
+                                        data-idx={idx}
+                                        data-subfield="fieldApiName"
+                                        onchange={handleCriterionChange}
+                                        class="criterion-col-large">
+                                    </lightning-combobox>
+                                    <lightning-combobox
+                                        label="Type"
+                                        placeholder="Type"
+                                        options={matchTypeOptions}
+                                        value={criterion.matchType}
+                                        data-idx={idx}
+                                        data-subfield="matchType"
+                                        onchange={handleCriterionChange}
+                                        class="criterion-col-medium">
+                                    </lightning-combobox>
+                                    <lightning-input
+                                        type="number"
+                                        label="Poids"
+                                        min="0"
+                                        max="100"
+                                        value={criterion.weight}
+                                        data-idx={idx}
+                                        data-subfield="weight"
+                                        onchange={handleCriterionChange}
+                                        class="criterion-col-small">
+                                    </lightning-input>
+
+                                    <!-- Match Blank Fields checkbox -->
+                                    <lightning-input
+                                        type="checkbox"
+                                        label="Match Blank Fields"
+                                        checked={criterion.matchBlankFields}
+                                        data-idx={idx}
+                                        data-subfield="matchBlankFields"
+                                        onchange={handleCriterionCheckbox}
+                                        class="criterion-col-check">
+                                    </lightning-input>
+
+                                    <lightning-button-icon
+                                        icon-name="utility:delete"
+                                        variant="border-filled"
+                                        size="small"
+                                        data-idx={idx}
+                                        onclick={handleRemoveCriterion}
+                                        class="criterion-delete">
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+                        </div>
+
+                    </div>
+
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Annuler" onclick={handleCloseModal}></lightning-button>
+                        <lightning-button variant="brand" label="Enregistrer" onclick={handleSaveRule}></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+    </div>
+</template>

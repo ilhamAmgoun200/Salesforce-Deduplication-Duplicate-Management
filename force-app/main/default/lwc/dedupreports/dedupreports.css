@@ -1,0 +1,219 @@
+/* KPI Row */
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.summary-kpi {
+    background: #ffffff;
+    border: 1px solid #e0e5ee;
+    border-radius: 6px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.kpi-icon { color: #0070d2; }
+
+.kpi-body {}
+
+.kpi-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #181818;
+    line-height: 1;
+}
+
+.kpi-lbl {
+    font-size: 11px;
+    color: #706e6b;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Filters */
+.report-filters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+/* Charts Row */
+.charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+}
+
+/* Bar chart */
+.bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 160px;
+    padding-bottom: 24px;
+    position: relative;
+}
+
+.bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    position: relative;
+}
+
+.bar-col:hover .bar-tooltip { display: block; }
+
+.bar-tooltip {
+    display: none;
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3e3e3c;
+    color: white;
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.bar-fill {
+    width: 100%;
+    background: #0070d2;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+}
+
+.bar-day {
+    position: absolute;
+    bottom: -18px;
+    font-size: 9px;
+    color: #706e6b;
+    white-space: nowrap;
+}
+
+/* Object breakdown */
+.breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.breakdown-row:last-child { margin-bottom: 0; }
+
+.breakdown-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.breakdown-info { flex: 1; min-width: 0; }
+
+.breakdown-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #181818;
+    margin-bottom: 4px;
+}
+
+.breakdown-bar {
+    height: 6px;
+    background: #f3f2f2;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.breakdown-fill {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.breakdown-count {
+    font-size: 15px;
+    font-weight: 700;
+    color: #181818;
+    min-width: 48px;
+    text-align: right;
+}
+
+.breakdown-pct {
+    font-size: 12px;
+    color: #706e6b;
+    min-width: 32px;
+    text-align: right;
+}
+
+/* Log table */
+.log-search { width: 220px; }
+
+.log-date {
+    font-size: 12px;
+    font-weight: 600;
+    color: #181818;
+}
+
+.log-time {
+    font-size: 11px;
+    color: #706e6b;
+}
+
+.op-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.obj-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.count-processed { font-size: 13px; font-weight: 600; color: #2e844a; }
+.count-sep { color: #706e6b; }
+.count-total { font-size: 12px; color: #706e6b; }
+
+.cell-rule     { font-size: 11px; color: #706e6b; max-width: 140px; }
+.cell-user     { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.cell-duration { font-size: 12px; color: #706e6b; }
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #0070d2;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Badges */
+.badge-success { --sds-c-badge-color-background: #e3f5e3; --sds-c-badge-text-color: #2e844a; }
+.badge-warning { --sds-c-badge-color-background: #fff3e0; --sds-c-badge-text-color: #b75000; }
+.badge-danger  { --sds-c-badge-color-background: #fce8e8; --sds-c-badge-text-color: #ba0517; }
+.badge-neutral { --sds-c-badge-color-background: #f3f2f2; --sds-c-badge-text-color: #706e6b; }

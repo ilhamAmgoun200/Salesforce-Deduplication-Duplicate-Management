@@ -1,0 +1,176 @@
+<template>
+    <div class="slds-var-p-around_medium">
+
+        <!-- Page Header -->
+        <div class="slds-page-header slds-var-m-bottom_medium">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container slds-icon-standard-data-integration-hub">
+                                <lightning-icon icon-name="standard:data_integration_hub" size="medium"></lightning-icon>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <h1>
+                                        <span class="slds-page-header__title slds-truncate">
+                                            Duplicate Management — Dashboard
+                                        </span>
+                                    </h1>
+                                </div>
+                            </div>
+                            <p class="slds-page-header__name-meta">
+                                Dernière synchronisation : {lastSyncLabel} · Organisation : {orgName}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-page-header__col-actions">
+                    <div class="slds-page-header__controls">
+                        <div class="slds-page-header__control">
+                            <lightning-button
+                                label="Planifier un scan"
+                                onclick={handleScheduleScan}>
+                            </lightning-button>
+                        </div>
+                        <div class="slds-page-header__control">
+                            <lightning-button
+                                variant="brand"
+                                label="Lancer un scan"
+                                icon-name="utility:refresh"
+                                onclick={handleRunScan}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spinner -->
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Chargement..." size="medium"></lightning-spinner>
+        </template>
+
+        <template if:false={isLoading}>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid slds-var-m-bottom_medium">
+                <template for:each={kpiCards} for:item="kpi">
+                    <div key={kpi.id} class="kpi-card">
+                        <div class="kpi-label">{kpi.label}</div>
+                        <div class="kpi-value">{kpi.value}</div>
+                        <div class={kpi.deltaClass}>
+                            <lightning-icon icon-name={kpi.deltaIcon} size="xx-small"></lightning-icon>
+                            <span>{kpi.delta}</span>
+                        </div>
+                        <div class="kpi-accent" style={kpi.accentStyle}></div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="main-grid">
+
+                <!-- Left: Duplicates by Object -->
+                <lightning-card title="Doublons par objet" icon-name="utility:record_alt">
+                    <div slot="actions">
+                        <lightning-badge label="Action requise" class="badge-danger"></lightning-badge>
+                    </div>
+                    <div class="slds-var-p-horizontal_none">
+                        <template for:each={objectStats} for:item="obj">
+                            <div key={obj.id} class="object-row">
+                                <div class="obj-icon" style={obj.iconStyle}>{obj.initials}</div>
+                                <div class="obj-info">
+                                    <div class="obj-name">{obj.name}</div>
+                                    <div class="obj-meta">{obj.totalLabel}</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style={obj.progressStyle}></div>
+                                    </div>
+                                </div>
+                                <div class="obj-stats">
+                                    <div class="obj-dupe-count">{obj.duplicates}</div>
+                                    <lightning-badge label={obj.pctLabel} class={obj.badgeClass}></lightning-badge>
+                                </div>
+                                <div class="obj-action">
+                                    <lightning-button-icon
+                                        icon-name="utility:merge"
+                                        variant="border-filled"
+                                        size="small"
+                                        title="Voir les doublons"
+                                        data-object={obj.apiName}
+                                        onclick={handleViewDuplicates}>
+                                    </lightning-button-icon>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-card>
+
+                <!-- Right Column -->
+                <div class="right-col">
+
+                    <!-- Recent Activity -->
+                    <lightning-card title="Activité récente" icon-name="utility:activity">
+                        <div class="slds-var-p-horizontal_none">
+                            <template for:each={recentActivity} for:item="act">
+                                <div key={act.id} class="activity-row">
+                                    <div class="activity-dot" style={act.dotStyle}></div>
+                                    <div class="activity-body">
+                                        <div class="activity-text">{act.message}</div>
+                                        <div class="activity-meta">{act.timeLabel} · {act.detail}</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-card>
+
+                    <!-- Active Scans -->
+                    <lightning-card title="Scans en cours" icon-name="utility:search" class="slds-var-m-top_small">
+                        <div class="slds-var-p-horizontal_none">
+                            <template if:true={hasActiveScans}>
+                                <template for:each={activeScans} for:item="scan">
+                                    <div key={scan.id} class="scan-row">
+                                        <div class="scan-info">
+                                            <div class="scan-name">{scan.name}</div>
+                                            <div class="scan-meta">{scan.objectLabel} · Démarré {scan.startedLabel}</div>
+                                            <lightning-progress-bar value={scan.progress} size="small"></lightning-progress-bar>
+                                        </div>
+                                        <div class="scan-pct">{scan.progressLabel}</div>
+                                    </div>
+                                </template>
+                            </template>
+                            <template if:false={hasActiveScans}>
+                                <div class="empty-state">
+                                    <lightning-icon icon-name="utility:check" size="small" variant="success"></lightning-icon>
+                                    <span>Aucun scan en cours</span>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-card>
+
+                </div>
+            </div>
+
+            <!-- Bottom: Recent Merge Jobs -->
+            <lightning-card title="Dernières opérations de fusion" icon-name="utility:merge" class="slds-var-m-top_medium">
+                <div slot="actions">
+                    <lightning-button label="Voir tout" variant="base" onclick={handleViewAllMerges}></lightning-button>
+                </div>
+                <div class="slds-var-p-around_none">
+                    <lightning-datatable
+                        data={mergeJobs}
+                        columns={mergeColumns}
+                        key-field="id"
+                        hide-checkbox-column
+                        sorted-by={sortedBy}
+                        sorted-direction={sortedDirection}
+                        onsort={handleSort}>
+                    </lightning-datatable>
+                </div>
+            </lightning-card>
+
+        </template>
+    </div>
+</template>

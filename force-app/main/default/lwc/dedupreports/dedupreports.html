@@ -1,0 +1,196 @@
+<template>
+    <div class="slds-var-p-around_medium">
+
+        <!-- Page Header -->
+        <div class="slds-page-header slds-var-m-bottom_medium">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="utility:report" size="medium"></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                            <h1 class="slds-page-header__title">Reports & Historique</h1>
+                            <p class="slds-page-header__name-meta">Audit complet des opérations de déduplication</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-page-header__col-actions">
+                    <div class="slds-page-header__controls">
+                        <div class="slds-page-header__control">
+                            <lightning-button label="Exporter CSV" icon-name="utility:download" onclick={handleExportCSV}></lightning-button>
+                        </div>
+                        <div class="slds-page-header__control">
+                            <lightning-button variant="brand" label="Générer un rapport" icon-name="utility:file" onclick={handleGenerateReport}></lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary KPIs -->
+        <div class="kpi-row slds-var-m-bottom_medium">
+            <template for:each={summaryKpis} for:item="kpi">
+                <div key={kpi.id} class="summary-kpi">
+                    <lightning-icon icon-name={kpi.icon} size="small" class="kpi-icon"></lightning-icon>
+                    <div class="kpi-body">
+                        <div class="kpi-val">{kpi.value}</div>
+                        <div class="kpi-lbl">{kpi.label}</div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Date Range + Filters -->
+        <div class="report-filters slds-var-m-bottom_medium">
+            <lightning-combobox
+                label="Période"
+                options={periodOptions}
+                value={filterPeriod}
+                onchange={handlePeriodChange}
+                class="period-select">
+            </lightning-combobox>
+            <lightning-combobox
+                label="Objet"
+                options={objectOptions}
+                value={filterObject}
+                onchange={handleObjectChange}
+                class="period-select">
+            </lightning-combobox>
+            <lightning-combobox
+                label="Type d'opération"
+                options={operationOptions}
+                value={filterOperation}
+                onchange={handleOperationChange}
+                class="period-select">
+            </lightning-combobox>
+            <lightning-combobox
+                label="Utilisateur"
+                options={userOptions}
+                value={filterUser}
+                onchange={handleUserChange}
+                class="period-select">
+            </lightning-combobox>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row slds-var-m-bottom_medium">
+            <!-- Trend chart (static visual) -->
+            <lightning-card title="Évolution des fusions (30 jours)" icon-name="utility:chart">
+                <div class="chart-container slds-var-p-horizontal_medium slds-var-p-bottom_medium">
+                    <div class="bar-chart">
+                        <template for:each={trendData} for:item="day">
+                            <div key={day.id} class="bar-col">
+                                <div class="bar-tooltip">{day.label}: {day.count}</div>
+                                <div class="bar-fill" style={day.barStyle}></div>
+                                <div class="bar-day">{day.dayLabel}</div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </lightning-card>
+
+            <!-- Breakdown by object -->
+            <lightning-card title="Répartition par objet" icon-name="utility:record_alt">
+                <div class="slds-var-p-around_medium">
+                    <template for:each={objectBreakdown} for:item="obj">
+                        <div key={obj.id} class="breakdown-row">
+                            <div class="breakdown-icon" style={obj.iconStyle}>{obj.initials}</div>
+                            <div class="breakdown-info">
+                                <div class="breakdown-name">{obj.name}</div>
+                                <div class="breakdown-bar">
+                                    <div class="breakdown-fill" style={obj.fillStyle}></div>
+                                </div>
+                            </div>
+                            <div class="breakdown-count">{obj.count}</div>
+                            <div class="breakdown-pct">{obj.pctLabel}</div>
+                        </div>
+                    </template>
+                </div>
+            </lightning-card>
+        </div>
+
+        <!-- Operations Log Table -->
+        <lightning-card title="Journal des opérations" icon-name="utility:list">
+            <div slot="actions">
+                <lightning-input
+                    type="search"
+                    label=""
+                    placeholder="Rechercher..."
+                    value={searchTerm}
+                    onchange={handleSearch}
+                    class="log-search">
+                </lightning-input>
+            </div>
+            <div class="slds-var-p-around_none">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_fixed-layout">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th>Date & Heure</th>
+                            <th>Opération</th>
+                            <th>Objet</th>
+                            <th>Enregistrements</th>
+                            <th>Règle utilisée</th>
+                            <th>Utilisateur</th>
+                            <th>Durée</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={filteredLogs} for:item="log">
+                            <tr key={log.id}>
+                                <td>
+                                    <div class="log-date">{log.dateLabel}</div>
+                                    <div class="log-time">{log.timeLabel}</div>
+                                </td>
+                                <td>
+                                    <div class="op-tag" style={log.opTagStyle}>{log.operationLabel}</div>
+                                </td>
+                                <td>
+                                    <div class="obj-pill" style={log.objPillStyle}>{log.objectLabel}</div>
+                                </td>
+                                <td class="cell-count">
+                                    <span class="count-processed">{log.processed}</span>
+                                    <span class="count-sep"> / </span>
+                                    <span class="count-total">{log.total}</span>
+                                </td>
+                                <td class="cell-rule">{log.ruleName}</td>
+                                <td class="cell-user">
+                                    <div class="user-avatar">{log.userInitials}</div>
+                                    <span>{log.userName}</span>
+                                </td>
+                                <td class="cell-duration">{log.duration}</td>
+                                <td>
+                                    <lightning-badge label={log.statusLabel} class={log.statusClass}></lightning-badge>
+                                </td>
+                                <td>
+                                    <lightning-button-icon
+                                        icon-name="utility:preview"
+                                        variant="border-filled"
+                                        size="small"
+                                        title="Voir le détail"
+                                        data-log-id={log.id}
+                                        onclick={handleViewLog}>
+                                    </lightning-button-icon>
+                                    <template if:true={log.canUndo}>
+                                        <lightning-button-icon
+                                            icon-name="utility:undo"
+                                            variant="border-filled"
+                                            size="small"
+                                            title="Annuler"
+                                            data-log-id={log.id}
+                                            onclick={handleUndoLog}
+                                            class="slds-var-m-left_xx-small">
+                                        </lightning-button-icon>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </lightning-card>
+
+    </div>
+</template>
