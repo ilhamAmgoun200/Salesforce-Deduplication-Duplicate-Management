@@ -67,13 +67,13 @@ jobs:
 
       - name: Auth Dev Hub via JWT
         run: |
-          echo "${{ secrets.DEVHUB_JWT_KEY }}" > devhub-key.txt
+          echo "${{ secrets.SF_JWT_KEY }}" > devhub-key.txt
           chmod 600 devhub-key.txt
           sf org login jwt \
-            --client-id ${{ secrets.DEVHUB_CLIENT_ID }} \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
             --jwt-key-file devhub-key.txt \
-            --username ${{ secrets.DEVHUB_USERNAME }} \
-            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
+            --username ${{ secrets.SF_USERNAME }} \
+            --instance-url ${{ secrets.SF_INSTANCE_URL_P }} \
             --set-default-dev-hub \
             --alias DevHub
           rm devhub-key.txt
@@ -127,6 +127,7 @@ jobs:
         if: env.SKIP_DEPLOYMENT == 'false'
         run: |
           sf apex run test \
+            --test-level RunLocalTests \
             --target-org ScratchOrg \
             --code-coverage \
             --result-format human \
