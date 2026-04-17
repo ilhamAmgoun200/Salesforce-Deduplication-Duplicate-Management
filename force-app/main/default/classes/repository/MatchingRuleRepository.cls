@@ -8,7 +8,7 @@ public with sharing class MatchingRuleRepository {
     
     List<ADM_MatchingRule__c> rules = [
         SELECT Id, DeveloperName__c, MasterLabel__c, Description__c,
-               SobjectType__c, NamespacePrefix__c, IsActive__c
+               SobjectType__c, NamespacePrefix__c, IsActive__c, BooleanFilter__c
         FROM ADM_MatchingRule__c
         WHERE Id = :ruleId
         LIMIT 1
@@ -20,7 +20,7 @@ public with sharing class MatchingRuleRepository {
     public List<ADM_MatchingRule__c> getAllRules() {
         return [
         SELECT Id, DeveloperName__c, MasterLabel__c, Description__c,
-               SobjectType__c, NamespacePrefix__c, IsActive__c
+               SobjectType__c, NamespacePrefix__c, IsActive__c, BooleanFilter__c
         FROM ADM_MatchingRule__c
         ORDER BY CreatedDate DESC
     ];
