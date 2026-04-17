@@ -66,32 +66,4 @@ public with sharing class MatchingRuleController {
         }
     }
     
-    // ========== Méthodes privées ==========
-    
-    private static Boolean isSupportedObject(String objectName) {
-        // Exclure les objets système trop techniques
-        if (objectName.startsWith('__')) return false;
-        if (objectName.endsWith('__Tag') || objectName.endsWith('__History')) return false;
-        if (objectName.endsWith('__Share')) return false;
-        
-        // Inclure les objets standards courants
-        Set<String> standardObjects = new Set<String>{
-            'Contact', 'Lead', 'Account', 'Opportunity', 'Case'
-        };
-        
-        return standardObjects.contains(objectName) || objectName.endsWith('__c');
-    }
-    
-    private static Boolean isSupportedFieldType(Schema.DescribeFieldResult fieldDescribe) {
-        // Types de champs supportés pour le matching
-        Set<Schema.DisplayType> supportedTypes = new Set<Schema.DisplayType>{
-            Schema.DisplayType.String,
-            Schema.DisplayType.Email,
-            Schema.DisplayType.Phone,
-            Schema.DisplayType.TextArea,
-            Schema.DisplayType.URL
-        };
-        
-        return supportedTypes.contains(fieldDescribe.getType());
-    }
 }

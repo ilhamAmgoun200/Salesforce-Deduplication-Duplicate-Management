@@ -37,8 +37,8 @@ public with sharing class MatchingRuleService {
     
     public Id saveFullRule(ADM_MatchingRule__c rule, List<ADM_MatchingRuleItem__c> items) {
          // 1. Valider les données
-    validateRule(rule);
     validateItems(items);
+    validateRule(rule, items);
     
     // 2. Sauvegarder via repository (transaction atomique)
     return repo.saveFullRule(rule, items);
@@ -80,7 +80,7 @@ public with sharing class MatchingRuleService {
     
     // ========== Méthodes privées (validations) ==========
     
-    private void validateRule(ADM_MatchingRule__c rule) {
+    private void validateRule(ADM_MatchingRule__c rule, List<ADM_MatchingRuleItem__c> items) {
         if (rule == null) {
         throw new IllegalArgumentException('La règle ne peut pas être null');
     }
@@ -101,6 +101,11 @@ public with sharing class MatchingRuleService {
     // Vérifier que le DeveloperName__c est unique
     if (!repo.isDeveloperNameUnique(rule.DeveloperName__c, rule.Id)) {
         throw new IllegalArgumentException('Une règle avec le nom technique "' + rule.DeveloperName__c + '" existe déjà');
+    }
+
+     // Valider le format du BooleanFilter__c
+    if (!String.isBlank(rule.BooleanFilter__c)) {
+       validateBooleanFilter(rule.BooleanFilter__c, items);
     }
     }
     
@@ -131,5 +136,33 @@ public with sharing class MatchingRuleService {
         }
     }
 }
+
+private void validateBooleanFilter(String filter, List<ADM_MatchingRuleItem__c> items) {
+    // 1. Extraire tous les numéros présents dans la formule
+    Set<Integer> referencedOrders = new Set<Integer>();
+    Matcher matcher = Pattern.compile('\\d+').matcher(filter);
+    while (matcher.find()) {
+        referencedOrders.add(Integer.valueOf(matcher.group()));
+    }
+    
+    // 2. Récupérer les SortOrder des items existants
+    Set<Integer> existingOrders = new Set<Integer>();
+    for (ADM_MatchingRuleItem__c item : items) {
+        if (item.SortOrder__c != null) {
+            existingOrders.add((Integer)item.SortOrder__c);
+        }
+    }
+    
+    // 3. Vérifier que chaque numéro référencé existe dans les items
+    for (Integer order : referencedOrders) {
+        if (!existingOrders.contains(order)) {
+            throw new IllegalArgumentException(
+                'Le filtre booléen référence l\'item ' + order + 
+                ' mais cet item n\'existe pas dans la règle'
+            );
+        }
+    }
+}
+
 }
 
