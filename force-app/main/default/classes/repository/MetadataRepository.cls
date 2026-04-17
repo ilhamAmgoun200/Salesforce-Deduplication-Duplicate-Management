@@ -65,14 +65,45 @@ public with sharing class MetadataRepository {
     }
     
     private Boolean isSupportedFieldType(Schema.DescribeFieldResult fieldDescribe) {
-        Set<Schema.DisplayType> supportedTypes = new Set<Schema.DisplayType>{
-            Schema.DisplayType.String,
-            Schema.DisplayType.Email,
-            Schema.DisplayType.Phone,
-            Schema.DisplayType.TextArea,
-            Schema.DisplayType.URL
-        };
-        
-        return supportedTypes.contains(fieldDescribe.getType());
+    // 1. Vérifier le type
+    Set<Schema.DisplayType> supportedTypes = new Set<Schema.DisplayType>{
+        Schema.DisplayType.String,
+        Schema.DisplayType.Email,
+        Schema.DisplayType.Phone,
+        Schema.DisplayType.TextArea,
+        Schema.DisplayType.URL
+    };
+
+    // Exclure Rich Text Area et Long Text Area
+    if (fieldDescribe.getType() == Schema.DisplayType.Html || 
+        fieldDescribe.getType() == Schema.DisplayType.LongTextArea) {
+        return false;
     }
+    
+    if (!supportedTypes.contains(fieldDescribe.getType())) {
+        return false;
+    }
+    
+    // 2. Exclure les champs système par nom
+    String fieldName = fieldDescribe.getName().toLowerCase();
+    Set<String> excludedFields = new Set<String>{
+        'id', 'createddate', 'lastmodifieddate', 'createdbyid', 'lastmodifiedbyid',
+        'systemmodstamp', 'isdeleted', 'ownerid', 'recordtypeid',
+        'currencyisocode', 'convertedaccountid', 'convertedcontactid', 'convertedopportunityid',
+        'isconverted', 'isunreadbyowner'
+    };
+    
+    if (excludedFields.contains(fieldName)) {
+        return false;
+    }
+    
+    // 3. Exclure les champs qui commencent par certains préfixes
+    if (fieldName.startsWith('masterrecordid') || 
+        fieldName.startsWith('related') ||
+        fieldName.endsWith('__r')) {
+        return false;
+    }
+    
+    return true;
+}
 }
