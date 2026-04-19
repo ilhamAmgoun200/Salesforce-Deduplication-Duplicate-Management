@@ -56,7 +56,6 @@
     <!-- LWC -->
     <types>
         <members>dedupmatchingrules</members>
-        <members>matchingrulesComponant</members>
         <name>LightningComponentBundle</name>
     </types>
 
