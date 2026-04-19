@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+
+    <!-- Apex Classes -->
+    <types>
+        <members>ExactMatchStrategy</members>
+        <members>ExactMatchStrategyTest</members>
+        <members>FuzzyMatchStrategy</members>
+        <members>FuzzyMatchStrategyTest</members>
+        <members>IMatchingStrategy</members>
+        <members>MatchingRuleController</members>
+        <members>MatchingRuleRepository</members>
+        <members>MatchingRuleRepositoryTest</members>
+        <members>MatchingRuleService</members>
+        <members>MatchingRuleServiceTest</members>
+        <members>MatchingRuleWrapper</members>
+        <members>MetadataRepository</members>
+        <members>MetadataRepositoryTest</members>
+        <members>PhoneticMatchStrategy</members>
+        <members>PhoneticMatchStrategyTest</members>
+        <members>StringUtils</members>
+        <members>StringUtilsTest</members>
+        <name>ApexClass</name>
+    </types>
+
+    
+
+    <!-- Fields -->
+    <types>
+        <members>ADM_MatchingRuleItem__c.Field__c</members>
+        <members>ADM_MatchingRuleItem__c.MatchBlankFields__c</members>
+        <members>ADM_MatchingRuleItem__c.MatchingMethod__c</members>
+        <members>ADM_MatchingRuleItem__c.MatchingRule__c</members>
+        <members>ADM_MatchingRuleItem__c.SortOrder__c</members>
+        <members>ADM_MatchingRuleItem__c.Weight__c</members>
+        <members>ADM_MatchingRule__c.BooleanFilter__c</members>
+        <members>ADM_MatchingRule__c.Description__c</members>
+        <members>ADM_MatchingRule__c.DeveloperName__c</members>
+        <members>ADM_MatchingRule__c.IsActive__c</members>
+        <members>ADM_MatchingRule__c.MasterLabel__c</members>
+        <members>ADM_MatchingRule__c.NamespacePrefix__c</members>
+        <members>ADM_MatchingRule__c.SobjectType__c</members>
+        <name>CustomField</name>
+    </types>
+
+    <!-- Objects -->
+    <types>
+        <members>ADM_MatchingRuleItem__c</members>
+        <members>ADM_MatchingRule__c</members>
+        <name>CustomObject</name>
+    </types>
+
+   
+    
+
+    <!-- LWC -->
+    <types>
+        <members>dedupmatchingrules</members>
+        <members>matchingrulesComponant</members>
+        <name>LightningComponentBundle</name>
+    </types>
+
+    <!-- Validation Rules -->
+    <types>
+        <members>ADM_MatchingRuleItem__c.Weight_Range</members>
+        <name>ValidationRule</name>
+    </types>
+
+    <version>66.0</version>
+</Package>

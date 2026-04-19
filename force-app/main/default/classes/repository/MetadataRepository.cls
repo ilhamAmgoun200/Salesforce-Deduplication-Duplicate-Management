@@ -1,78 +1,98 @@
 public with sharing class MetadataRepository {
-    
+
     public Boolean objectExists(String objectName) {
-        if (String.isBlank(objectName)) {
-            return false;
-        }
-        Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
-        return globalDescribe.containsKey(objectName);
+        if (String.isBlank(objectName)) return false;
+        Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+        return gd.containsKey(objectName.toLowerCase());
     }
-    
+
     public List<Map<String, String>> getAllObjects() {
-        List<Map<String, String>> objects = new List<Map<String, String>>();
-        Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
-        
-        for (String objectName : globalDescribe.keySet()) {
-            if (isSupportedObject(objectName)) {
-                Map<String, String> objMap = new Map<String, String>();
-                objMap.put('label', objectName);
-                objMap.put('value', objectName);
-                objects.add(objMap);
+        List<Map<String, String>> result = new List<Map<String, String>>();
+        Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+        List<String> keys = new List<String>(gd.keySet());
+
+        for (Integer i = 0; i < keys.size(); i++) {
+            String key = keys[i];
+            if (!isSupportedObject(key)) {
+                // rien
+            } else {
+                String lbl   = gd.get(key).getDescribe().getLabel();
+                String nm    = gd.get(key).getDescribe().getName();
+                Boolean acc  = gd.get(key).getDescribe().isAccessible();
+                if (acc) {
+                    Map<String, String> entry = new Map<String, String>();
+                    entry.put('label', lbl);
+                    entry.put('value', nm);
+                    result.add(entry);
+                }
             }
         }
-        objects.sort();
-        return objects;
+
+        result.sort(new LabelComparator());
+        return result;
     }
-    
+
     public List<Map<String, String>> getObjectFields(String objectName) {
-        List<Map<String, String>> fields = new List<Map<String, String>>();
-        
-        if (String.isBlank(objectName)) {
-            return fields;
-        }
-        
-        Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
-        if (!globalDescribe.containsKey(objectName)) {
-            return fields;
-        }
-        
-        Map<String, Schema.SObjectField> fieldMap = globalDescribe.get(objectName).getDescribe().fields.getMap();
-        
-        for (String fieldName : fieldMap.keySet()) {
-            Schema.DescribeFieldResult fieldDescribe = fieldMap.get(fieldName).getDescribe();
-            if (isSupportedFieldType(fieldDescribe)) {
-                Map<String, String> fieldMap2 = new Map<String, String>();
-                fieldMap2.put('label', fieldDescribe.getLabel());
-                fieldMap2.put('value', fieldName);
-                fields.add(fieldMap2);
+        List<Map<String, String>> result = new List<Map<String, String>>();
+        if (String.isBlank(objectName)) return result;
+
+        Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+        if (!gd.containsKey(objectName.toLowerCase())) return result;
+
+        Map<String, Schema.SObjectField> fieldMap =
+            gd.get(objectName.toLowerCase()).getDescribe().fields.getMap();
+
+        List<String> fieldKeys = new List<String>(fieldMap.keySet());
+
+        for (Integer i = 0; i < fieldKeys.size(); i++) {
+            String fk        = fieldKeys[i];
+            String flabel    = fieldMap.get(fk).getDescribe().getLabel();
+            String fname     = fieldMap.get(fk).getDescribe().getName();
+            Boolean facc     = fieldMap.get(fk).getDescribe().isAccessible();
+            Boolean ftype    = isSupportedFieldType(fieldMap.get(fk).getDescribe().getType());
+            if (ftype && facc) {
+                Map<String, String> entry = new Map<String, String>();
+                entry.put('label', flabel);
+                entry.put('value', fname);
+                result.add(entry);
             }
         }
-        
-        fields.sort();
-        return fields;
+
+        result.sort(new LabelComparator());
+        return result;
     }
-    
-    private Boolean isSupportedObject(String objectName) {
-        if (objectName.startsWith('__')) return false;
-        if (objectName.endsWith('__Tag') || objectName.endsWith('__History')) return false;
-        if (objectName.endsWith('__Share')) return false;
-        
-        Set<String> standardObjects = new Set<String>{
-            'Contact', 'Lead', 'Account', 'Opportunity', 'Case'
+
+    private Boolean isSupportedObject(String apiNameLower) {
+        if (apiNameLower.startsWith('__'))          return false;
+        if (apiNameLower.endsWith('__tag'))         return false;
+        if (apiNameLower.endsWith('__history'))     return false;
+        if (apiNameLower.endsWith('__share'))       return false;
+        if (apiNameLower.endsWith('__feed'))        return false;
+        if (apiNameLower.endsWith('__changeevent')) return false;
+
+        Set<String> whitelist = new Set<String>{
+            'contact', 'lead', 'account', 'opportunity', 'case'
         };
-        
-        return standardObjects.contains(objectName) || objectName.endsWith('__c');
+        return whitelist.contains(apiNameLower) || apiNameLower.endsWith('__c');
     }
-    
-    private Boolean isSupportedFieldType(Schema.DescribeFieldResult fieldDescribe) {
-        Set<Schema.DisplayType> supportedTypes = new Set<Schema.DisplayType>{
+
+    private Boolean isSupportedFieldType(Schema.DisplayType dt) {
+        Set<Schema.DisplayType> supported = new Set<Schema.DisplayType>{
             Schema.DisplayType.String,
             Schema.DisplayType.Email,
             Schema.DisplayType.Phone,
             Schema.DisplayType.TextArea,
-            Schema.DisplayType.URL
+            Schema.DisplayType.URL,
+            Schema.DisplayType.Picklist
         };
-        
-        return supportedTypes.contains(fieldDescribe.getType());
+        return supported.contains(dt);
+    }
+
+    private class LabelComparator implements Comparator<Map<String, String>> {
+        public Integer compare(Map<String, String> a, Map<String, String> b) {
+            String la = a.get('label') != null ? a.get('label') : '';
+            String lb = b.get('label') != null ? b.get('label') : '';
+            return la.compareTo(lb);
+        }
     }
 }
