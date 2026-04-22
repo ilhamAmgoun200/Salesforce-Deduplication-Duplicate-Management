@@ -6,8 +6,12 @@ public class MatchingRuleWrapper {
     @AuraEnabled
     public List<ADM_MatchingRuleItem__c> items { get; set; }
 
+    @AuraEnabled
+    public String objectLabel { get; set; } 
+
     public MatchingRuleWrapper(ADM_MatchingRule__c rule, List<ADM_MatchingRuleItem__c> items) {
         this.rule  = rule;
         this.items = (items != null) ? items : new List<ADM_MatchingRuleItem__c>();
+        this.objectLabel = rule.SobjectType__c;
     }
 }

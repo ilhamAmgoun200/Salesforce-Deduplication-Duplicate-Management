@@ -1,19 +1,28 @@
-/* Filter bar */
-.filter-bar {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
+/* ============================================
+   COMPONENT: dedupmatchingrules
+   ============================================ */
+
+/* ─── Page Header ─────────────────────────── */
+.slds-page-header {
+    padding: 12px 16px;
 }
 
+.slds-page-header__name-meta {
+    font-size: 0.75rem;
+}
+
+/* ─── Barre d'outils (filtres + recherche + boutons) ─── */
 .filter-select {
-    width: 200px;
+    width: 140px;
 }
 
-.filter-search {
-    flex: 1;
+/* Supprimer les marges verticales des formulaires */
+lightning-combobox,
+lightning-input {
+    margin-bottom: 0;
 }
 
-/* Rules List */
+/* ─── Cartes (Card View) ──────────────────── */
 .rules-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -38,12 +47,12 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* Rule Header */
+/* Header de la carte */
 .rule-card__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
+    padding: 12px 16px;
     border-bottom: 1px solid #f3f2f2;
 }
 
@@ -52,6 +61,7 @@
     align-items: center;
     gap: 10px;
     min-width: 0;
+    flex-wrap: wrap;
 }
 
 .rule-obj-badge {
@@ -72,15 +82,6 @@
     text-overflow: ellipsis;
 }
 
-.rule-strategy {
-    font-size: 11px;
-    color: #706e6b;
-    flex-shrink: 0;
-    padding: 2px 8px;
-    background: #f3f2f2;
-    border-radius: 10px;
-}
-
 .rule-header-right {
     display: flex;
     align-items: center;
@@ -88,13 +89,36 @@
     flex-shrink: 0;
 }
 
-/* Criteria section */
+/* Description sous le nom */
+.rule-description {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 16px 10px 16px;
+    color: #5a6472;
+    font-size: 0.75rem;
+    border-bottom: 1px solid #e5e9ef;
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+.rule-description__icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.rule-description__text {
+    flex: 1;
+    word-break: break-word;
+}
+
+/* Section des critères */
 .rule-criteria {
-    padding: 12px 16px;
+    padding: 10px 16px;
     border-bottom: 1px solid #f3f2f2;
 }
 
-/* Header row: label + optional logic badge */
 .criteria-label-row {
     display: flex;
     align-items: center;
@@ -103,22 +127,20 @@
 }
 
 .criteria-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: #706e6b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-/* Badge showing the custom filter logic expression on the rule card */
 .criteria-logic-badge {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: #0b5cab;
     background: #e6f2fb;
     border-radius: 10px;
     padding: 2px 8px;
-    letter-spacing: 0.2px;
 }
 
 .criteria-list {
@@ -128,18 +150,16 @@
     gap: 4px;
 }
 
-/* Inline AND separator between criteria chips in the read-only card view */
 .and-separator-inline {
     display: flex;
     align-items: center;
 }
 
 .and-label-inline {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     color: #706e6b;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     padding: 0 4px;
 }
 
@@ -150,12 +170,11 @@
     background: #f3f2f2;
     border-radius: 4px;
     padding: 4px 10px;
-    font-size: 12px;
+    font-size: 11px;
 }
 
-/* Order number in the read-only chip */
 .criterion-order {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     color: #706e6b;
     background: #e0e5ee;
@@ -178,9 +197,8 @@
     font-weight: 600;
 }
 
-/* "Blank ✓" badge shown when matchBlankFields is true */
 .criterion-blank-badge {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     color: #614905;
     background: #fef0c7;
@@ -189,10 +207,10 @@
     margin-left: 2px;
 }
 
-/* Stats row */
+/* Stats */
 .rule-stats {
     display: flex;
-    padding: 10px 16px;
+    padding: 8px 16px;
     gap: 0;
 }
 
@@ -210,23 +228,106 @@
 }
 
 .stat-value {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     color: #181818;
 }
 
 .stat-label {
-    font-size: 10px;
+    font-size: 9px;
     color: #706e6b;
     text-transform: uppercase;
     letter-spacing: 0.4px;
     margin-top: 2px;
 }
 
-/* -----------------------------------------------
-   Criteria Builder (modal)
-   ----------------------------------------------- */
+/* ─── Badges ───────────────────────────────── */
+.badge-success {
+    --sds-c-badge-color-background: #e3f5e3;
+    --sds-c-badge-text-color: #2e844a;
+}
 
+.badge-neutral {
+    --sds-c-badge-color-background: #f3f2f2;
+    --sds-c-badge-text-color: #706e6b;
+}
+
+/* ─── Vue Tableau ──────────────────────────── */
+.rules-table-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    overflow: hidden;
+    border: 1px solid #dddbda;
+}
+
+.rules-table {
+    width: 100%;
+}
+
+.rules-table thead th {
+    background: #f3f3f3;
+    color: #3e3e3c;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 10px 12px;
+    border-bottom: 2px solid #dddbda;
+}
+
+.rules-table tbody tr:hover td {
+    background: #f0f7ff;
+}
+
+.rules-table tbody td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e5e5e5;
+    font-size: 0.8rem;
+    color: #3e3e3c;
+}
+
+.table-rule-name {
+    font-weight: 600;
+    color: #0070d2;
+}
+
+.table-rule-desc {
+    color: #706e6b;
+    font-size: 0.75rem;
+    max-width: 200px;
+}
+
+.table-criteria-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.table-criterion-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background: #f4f6f9;
+    border: 1px solid #d8dde6;
+    border-radius: 12px;
+    font-size: 0.68rem;
+    color: #3e3e3c;
+    white-space: nowrap;
+}
+
+.table-empty-cell {
+    color: #aeaeae;
+    font-size: 0.7rem;
+}
+
+.table-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* ─── Modal / Builder ──────────────────────── */
 .criteria-builder {
     background: #f8f7f6;
     border: 1px solid #e0e5ee;
@@ -247,7 +348,6 @@
     color: #181818;
 }
 
-/* Filter logic input row */
 .filter-logic-row {
     margin-bottom: 10px;
 }
@@ -258,7 +358,6 @@
     margin-top: 4px;
 }
 
-/* AND separator between criterion rows in the builder */
 .and-separator {
     display: flex;
     align-items: center;
@@ -284,7 +383,6 @@
     flex-shrink: 0;
 }
 
-/* Each criterion row in the builder */
 .criterion-builder-row {
     display: flex;
     align-items: flex-end;
@@ -296,7 +394,6 @@
     padding: 10px;
 }
 
-/* Order badge inside the builder row */
 .criterion-order-badge {
     flex-shrink: 0;
     width: 24px;
@@ -309,22 +406,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 4px; /* align with input bottoms */
+    margin-bottom: 4px;
 }
 
-.criterion-col-large  { flex: 3; }
-.criterion-col-medium { flex: 2; }
-.criterion-col-small  { flex: 1; }
+.criterion-col-large {
+    flex: 3;
+}
 
-/* Match Blank Fields checkbox column */
+.criterion-col-medium {
+    flex: 2;
+}
+
+.criterion-col-small {
+    flex: 1;
+}
+
 .criterion-col-check {
     flex-shrink: 0;
     min-width: 90px;
 }
 
-.criterion-delete { flex-shrink: 0; }
+.criterion-delete {
+    flex-shrink: 0;
+}
 
-/* Empty state */
+/* ─── Empty state ──────────────────────────── */
 .empty-rules {
     display: flex;
     flex-direction: column;
@@ -334,119 +440,50 @@
     color: #706e6b;
     font-size: 14px;
 }
-/* À ajouter dans dedupMatchingRules.css */
 
-.rule-description {
+
+
+
+
+/* ─── Barre d'outils (filtres + recherche + boutons) ─── */
+.toolbar {
     display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    padding: 6px 16px 10px 16px;
-    color: #5a6472;
-    font-size: 0.8rem;
-    font-style: italic;
-    border-bottom: 1px dashed #e5e9ef;
-    margin-bottom: 2px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
 }
 
-.rule-description__icon {
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     flex-shrink: 0;
-    margin-top: 1px;
-    --lwc-colorTextIconDefault: #9ba7b4;
 }
 
-/* Badges */
-.badge-success { --sds-c-badge-color-background: #e3f5e3; --sds-c-badge-text-color: #2e844a; }
-.badge-neutral { --sds-c-badge-color-background: #f3f2f2; --sds-c-badge-text-color: #706e6b; }
-/* ── À ajouter dans dedupMatchingRules.css ── */
+.toolbar-center {
+    flex: 1;
+    min-width: 200px;
+}
 
-/* Toggle vue */
-.view-toggle {
+.toolbar-right {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
-/* Container tableau */
-.rules-table-container {
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    overflow: hidden;
-    border: 1px solid #dddbda;
+.filter-select {
+    width: 140px;
 }
 
-/* Table */
-.rules-table {
+.search-input {
     width: 100%;
 }
 
-.rules-table thead th {
-    background: #f3f3f3;
-    color: #3e3e3c;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 10px 12px;
-    border-bottom: 2px solid #dddbda;
+/* Supprimer les marges verticales indésirables */
+lightning-combobox,
+lightning-input {
+    margin-bottom: 0;
 }
-
-.rules-table tbody tr {
-    transition: background 0.12s;
-}
-
-.rules-table tbody tr:hover td {
-    background: #f0f7ff !important;
-}
-
-.rules-table tbody td {
-    padding: 10px 12px;
-    vertical-align: middle;
-    border-bottom: 1px solid #e5e5e5;
-    font-size: 0.85rem;
-    color: #3e3e3c;
-}
-
-/* Nom de la règle dans le tableau */
-.table-rule-name {
-    font-weight: 600;
-    color: #0070d2;
-}
-
-/* Description tronquée */
-.table-rule-desc {
-    color: #706e6b;
-    font-size: 0.8rem;
-    max-width: 200px;
-}
-
-/* Pills critères */
-.table-criteria-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.table-criterion-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    background: #f4f6f9;
-    border: 1px solid #d8dde6;
-    border-radius: 12px;
-    font-size: 0.72rem;
-    color: #3e3e3c;
-    white-space: nowrap;
-}
-
-/* Cellule vide */
-.table-empty-cell {
-    color: #aeaeae;
-    font-size: 0.75rem;
-}
-
-/* Actions dans le tableau */
-.table-actions {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-}
-

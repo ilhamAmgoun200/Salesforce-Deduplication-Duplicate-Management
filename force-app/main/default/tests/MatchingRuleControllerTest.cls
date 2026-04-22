@@ -133,8 +133,7 @@ public with sharing class MatchingRuleControllerTest {
         MatchingRuleController.saveFullRule(rule2, createValidItems());
 
         Test.startTest();
-        List<ADM_MatchingRule__c> rules =
-            MatchingRuleController.listRules();
+       List<MatchingRuleWrapper> rules = MatchingRuleController.listRules();
         Test.stopTest();
 
         System.assert(rules.size() >= 2);

@@ -63,18 +63,49 @@ public with sharing class MetadataRepository {
     }
 
     private Boolean isSupportedObject(String apiNameLower) {
-        if (apiNameLower.startsWith('__'))          return false;
-        if (apiNameLower.endsWith('__tag'))         return false;
-        if (apiNameLower.endsWith('__history'))     return false;
-        if (apiNameLower.endsWith('__share'))       return false;
-        if (apiNameLower.endsWith('__feed'))        return false;
-        if (apiNameLower.endsWith('__changeevent')) return false;
-
-        Set<String> whitelist = new Set<String>{
-            'contact', 'lead', 'account', 'opportunity', 'case'
-        };
-        return whitelist.contains(apiNameLower) || apiNameLower.endsWith('__c');
-    }
+    // Exclure les objets système évidents
+    if (apiNameLower.startsWith('__'))              return false;
+    if (apiNameLower.endsWith('__tag'))             return false;
+    if (apiNameLower.endsWith('__history'))         return false;
+    if (apiNameLower.endsWith('__share'))           return false;
+    if (apiNameLower.endsWith('__feed'))            return false;
+    if (apiNameLower.endsWith('__changeevent'))     return false;
+    
+    // Tous les objets customs sont acceptés
+    if (apiNameLower.endsWith('__c')) return true;
+    
+    // Liste blanche des objets standards métier
+    Set<String> whitelist = new Set<String>{
+        // CRM Core
+        'account', 'contact', 'lead', 'opportunity', 'case',
+        'campaign', 'campaignmember', 'opportunitycontactrole',
+        'opportunitylineitem', 'contactpointaddress', 'contactpointemail',
+        'contactpointphone', 'contactpointtypepreference', 'contactrequest',
+        
+        // Produits et actifs
+        'product2', 'pricebook2', 'pricebookentry', 'asset', 'contract',
+        'quote', 'order', 'orderitem', 'quotelineitem', 'entitlement',
+        
+        // Service et support
+        'solution', 'idea', 'ideacomment', 'casecomment', 'casecontactrole',
+        'casesolution', 'servicecontract', 'contractcontactrole', 'partner',
+        
+        // Marketing
+        'marketinglink', 'marketinglinktype', 'listemail', 'emailmessage',
+        'emailtemplate', 'campaignmemberstatus',
+        
+        // Commerce
+        'webstore', 'webstorecatalog', 'cartitem', 'cartcheckout',
+        'paymentauthorization', 'paymentgateway', 'refund', 'payment',
+        
+        // Événements et tâches (objets d'activité)
+        'event', 'task', 'note', 'calendar', 'calendarevent'
+        
+        // Objets personnalisés (déjà traités plus haut)
+    };
+    
+    return whitelist.contains(apiNameLower);
+}
 
     private Boolean isSupportedFieldType(Schema.DisplayType dt) {
         Set<Schema.DisplayType> supported = new Set<Schema.DisplayType>{
@@ -95,4 +126,17 @@ public with sharing class MetadataRepository {
             return la.compareTo(lb);
         }
     }
+
+    public Map<String, String> getObjectLabelsMap() {
+    Map<String, String> labels = new Map<String, String>();
+    Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+    
+    for (String apiName : gd.keySet()) {
+        // ✅ Garder la casse originale pour la clé
+        if (isSupportedObject(apiName.toLowerCase())) {
+            labels.put(apiName, gd.get(apiName).getDescribe().getLabel());
+        }
+    }
+    return labels;
+}
 }

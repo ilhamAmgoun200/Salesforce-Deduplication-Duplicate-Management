@@ -6,8 +6,8 @@
             <lightning-spinner alternative-text="Chargement..." size="medium"></lightning-spinner>
         </template>
 
-        <!-- Page Header -->
-        <div class="slds-page-header slds-var-m-bottom_medium">
+        <!-- Page Header (plus compact) -->
+        <div class="slds-page-header slds-var-m-bottom_x-small">
             <div class="slds-page-header__row">
                 <div class="slds-page-header__col-title">
                     <div class="slds-media">
@@ -35,50 +35,52 @@
             </div>
         </div>
 
-        <!-- Filters Bar -->
-        <div class="filter-bar slds-var-m-bottom_small">
-            <lightning-combobox
-                label=""
-                placeholder="Tous les objets"
-                options={objectFilterOptions}
-                value={filterObject}
-                onchange={handleObjectFilter}
-                class="filter-select">
-            </lightning-combobox>
-            <lightning-combobox
-                label=""
-                placeholder="Tous les statuts"
-                options={statusFilterOptions}
-                value={filterStatus}
-                onchange={handleStatusFilter}
-                class="filter-select">
-            </lightning-combobox>
-            <lightning-input
-                type="search"
-                label=""
-                placeholder="Rechercher une règle..."
-                value={searchTerm}
-                onchange={handleSearch}
-                class="filter-search">
-            </lightning-input>
-        </div>
-
-        <!-- View Toggle -->
-        <div class="view-toggle slds-var-m-bottom_small">
-            <lightning-button-group>
-                <lightning-button
-                    label="Cartes"
-                    icon-name="utility:kanban"
-                    variant={cardViewVariant}
-                    onclick={handleCardView}>
-                </lightning-button>
-                <lightning-button
-                    label="Tableau"
-                    icon-name="utility:table"
-                    variant={tableViewVariant}
-                    onclick={handleTableView}>
-                </lightning-button>
-            </lightning-button-group>
+                <!-- Barre d'outils : filtres + recherche + boutons -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <lightning-combobox
+                    label=""
+                    placeholder="Tous les objets"
+                    options={objectFilterOptions}
+                    value={filterObject}
+                    onchange={handleObjectFilter}
+                    class="filter-select">
+                </lightning-combobox>
+                <lightning-combobox
+                    label=""
+                    placeholder="Tous les statuts"
+                    options={statusFilterOptions}
+                    value={filterStatus}
+                    onchange={handleStatusFilter}
+                    class="filter-select">
+                </lightning-combobox>
+            </div>
+            <div class="toolbar-center">
+                <lightning-input
+                    type="search"
+                    label=""
+                    placeholder="Rechercher une règle..."
+                    value={searchTerm}
+                    onchange={handleSearch}
+                    class="search-input">
+                </lightning-input>
+            </div>
+            <div class="toolbar-right">
+                <lightning-button-group>
+                    <lightning-button
+                        label="Cartes"
+                        icon-name="utility:kanban"
+                        variant={cardViewVariant}
+                        onclick={handleCardView}>
+                    </lightning-button>
+                    <lightning-button
+                        label="Tableau"
+                        icon-name="utility:table"
+                        variant={tableViewVariant}
+                        onclick={handleTableView}>
+                    </lightning-button>
+                </lightning-button-group>
+            </div>
         </div>
 
         <!-- Rules List - Card View -->
@@ -91,12 +93,6 @@
                                 <div class="rule-header-left">
                                     <div class="rule-obj-badge" style={rule.objBadgeStyle}>{rule.objectLabel}</div>
                                     <div class="rule-name">{rule.name}</div>
-                                    <template if:true={rule.description}>
-                                        <div class="rule-strategy">{rule.description}</div>
-                                    </template>
-                                    <template if:false={rule.description}>
-                                        <div class="rule-strategy rule-strategy--empty">Aucune description</div>
-                                    </template>
                                 </div>
                                 <div class="rule-header-right">
                                     <lightning-badge label={rule.statusLabel} class={rule.statusClass}></lightning-badge>
@@ -126,6 +122,12 @@
                                         onclick={handleDeleteRule}>
                                     </lightning-button-icon>
                                 </div>
+                            </div>
+
+                            <!-- Description (sous le nom, avec retour à la ligne si long) -->
+                            <div class="rule-description">
+                                <lightning-icon icon-name="utility:description" size="xx-small" class="rule-description__icon"></lightning-icon>
+                                <span class="rule-description__text">{rule.description ? rule.description : 'Aucune description'}</span>
                             </div>
 
                             <!-- Criteria -->
@@ -207,7 +209,7 @@
                                         <div class="slds-truncate table-rule-name">{rule.name}</div>
                                     </td>
                                     <td data-label="Description">
-                                        <div class="slds-truncate table-rule-desc">{rule.description}</div>
+                                        <div class="slds-truncate table-rule-desc">{rule.description ? rule.description : '—'}</div>
                                     </td>
                                     <td data-label="Critères">
                                         <div class="table-criteria-pills">
@@ -287,7 +289,6 @@
                     </header>
 
                     <div class="slds-modal__content slds-var-p-around_medium">
-
                         <!-- Basic Info -->
                         <div class="slds-form slds-form_stacked">
                             <lightning-input
@@ -295,11 +296,12 @@
                                 value={editRule.MasterLabel__c}
                                 required
                                 data-field="MasterLabel__c"
-                                onchange={handleFieldChange}>
+                                onchange={handleFieldChange}
+                                onblur={handleMasterLabelBlur}>
                             </lightning-input>
 
                             <lightning-input
-                                label="Nom technique (DeveloperName)"
+                                label="Nom technique"
                                 value={editRule.DeveloperName__c}
                                 required
                                 placeholder="Ex: Lead_Email_Exact"
@@ -346,7 +348,6 @@
                                 </lightning-button>
                             </div>
 
-                            <!-- Criteria rows -->
                             <template for:each={editItems} for:item="criterion" for:index="idx">
                                 <template if:true={criterion.showAndSeparator}>
                                     <div key={criterion.separatorKey} class="and-separator">
@@ -413,7 +414,6 @@
                                 </div>
                             </template>
 
-                            <!-- Logique EN BAS des critères -->
                             <div class="filter-logic-row slds-var-m-top_small">
                                 <lightning-combobox
                                     label="Logique entre les critères"
@@ -439,7 +439,6 @@
                                 </template>
                             </div>
                         </div>
-
                     </div>
 
                     <footer class="slds-modal__footer">
@@ -450,6 +449,5 @@
             </section>
             <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
-
     </div>
 </template>

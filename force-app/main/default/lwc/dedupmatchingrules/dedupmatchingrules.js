@@ -83,10 +83,14 @@ function detectLogicMode(booleanFilter) {
     return 'CUSTOM';
 }
 
-function mapRuleToDisplay(rule, itemsIn) {
-    const items    = itemsIn || [];
+function mapRuleToDisplay(wrapper) {
+    const rule     = wrapper.rule;
+    const items    = wrapper.items || [];
     const isActive = rule.IsActive__c;
     const apiName  = rule.SobjectType__c || '';
+    
+    // 🔥 Utiliser objectLabel du wrapper
+    const objectLabel = wrapper.objectLabel || apiName;
 
     return {
         id:              rule.Id,
@@ -95,7 +99,7 @@ function mapRuleToDisplay(rule, itemsIn) {
         developerName:   rule.DeveloperName__c,
         description:     rule.Description__c,
         objectApiName:   apiName,
-        objectLabel:     apiName,
+        objectLabel:     objectLabel,  // ← Vrai label du backend
         objBadgeStyle:   OBJECT_BADGE_COLORS[apiName] || OBJECT_BADGE_COLORS.default,
         isActive:        isActive,
         statusLabel:     isActive ? 'Active' : 'Inactive',
@@ -140,6 +144,7 @@ export default class DedupMatchingRules extends LightningElement {
 
     @track salesforceObjectOptions = [];
     @track fieldOptions            = [];
+    
 
     _wiredRulesResult;
     _objectFilterOptionsCache = [{ label: 'Tous les objets', value: '' }];
@@ -151,24 +156,24 @@ export default class DedupMatchingRules extends LightningElement {
         this._wiredRulesResult = result;
         const { data, error } = result;
         if (data) {
-            this.rules = data.map(entry => {
-                if (entry && entry.rule) return mapRuleToDisplay(entry.rule, entry.items || []);
-                return mapRuleToDisplay(entry, []);
-            });
+            this.rules = data.map(wrapper => mapRuleToDisplay(wrapper));
         } else if (error) {
             this._showToast('Erreur', this._extractError(error), 'error');
         }
     }
 
     @wire(getAvailableObjects)
-    wiredObjects({ data, error }) {
-        if (data) {
-            this.salesforceObjectOptions = data;
-            this._objectFilterOptionsCache = [{ label: 'Tous les objets', value: '' }, ...data];
-        } else if (error) {
-            this._showToast('Erreur', 'Impossible de charger les objets Salesforce', 'error');
-        }
+wiredObjects({ data, error }) {
+    if (data) {
+        this.salesforceObjectOptions = data;
+        
+        this._objectFilterOptionsCache = [{ label: 'Tous les objets', value: '' }, ...data];
+        
+
+    } else if (error) {
+        this._showToast('Erreur', 'Impossible de charger les objets Salesforce', 'error');
     }
+}
 
     // ── Getters ──────────────────────────────────────────────────────────────
 
@@ -417,6 +422,10 @@ export default class DedupMatchingRules extends LightningElement {
             MatchBlankFields__c: item.MatchBlankFields__c || false
         }));
 
+         // ✅ AJOUTE ICI LE CONSOLE.LOG
+         console.log('ITEMS AVANT ENVOI:', JSON.stringify(itemRecords));
+
+
         // Calculer BooleanFilter__c selon le mode
         let boolFilter = this.editRule.BooleanFilter__c || '';
         if (this.editRule.filterLogicMode === 'AND') {
@@ -469,6 +478,49 @@ export default class DedupMatchingRules extends LightningElement {
         if (error && error.message) return error.message;
         return 'Une erreur inattendue est survenue.';
     }
+
+    // method pour generer le Developer name a partir du master label
+generateDeveloperName(masterLabel) {
+    console.log('generateDeveloperName appelé avec:', masterLabel);
+
+    if (!masterLabel) return '';
+    
+    // 1. Supprimer les accents (optionnel, selon tes besoins)
+    let normalized = masterLabel.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // 2. Remplacer les espaces et caractères spéciaux par des underscores
+    let developerName = normalized
+        .replace(/[^a-zA-Z0-9\s]/g, '')  // Enlever les caractères spéciaux
+        .trim()
+        .replace(/\s+/g, '_')            // Remplacer les espaces par _
+        .toLowerCase();                   // Mettre en minuscules
+    
+    // 3. S'assurer que le nom commence par une lettre (exigence Salesforce)
+    if (developerName.length > 0 && !/[a-zA-Z]/.test(developerName[0])) {
+        developerName = 'rule_' + developerName;
+    }
+    
+    // 4. Limiter la longueur (255 caractères max pour DeveloperName)
+    if (developerName.length > 255) {
+        developerName = developerName.substring(0, 255);
+    }
+    
+    return developerName;
+}
+
+handleMasterLabelBlur(event) {
+    // Ne générer que si c'est une nouvelle règle (pas en mode édition)
+    if (!this.isEditMode) {
+        const masterLabel = event.target.value;
+        if (masterLabel && !this.editRule.DeveloperName__c) {
+            const autoDeveloperName = this.generateDeveloperName(masterLabel);
+            this.editRule = {
+                ...this.editRule,
+                DeveloperName__c: autoDeveloperName
+            };
+        }
+    }
+}
 }
 
 function _isBlank(s) {
