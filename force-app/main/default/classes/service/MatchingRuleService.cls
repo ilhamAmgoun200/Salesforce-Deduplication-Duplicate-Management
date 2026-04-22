@@ -102,6 +102,14 @@ public with sharing class MatchingRuleService {
             );
         }
 
+        // Vérifier que le DeveloperName n'est pas modifié
+if (rule.Id != null) {
+    ADM_MatchingRule__c existingRule = repo.getRule(rule.Id);
+    if (existingRule != null && existingRule.DeveloperName__c != rule.DeveloperName__c) {
+        throw new IllegalArgumentException('Le nom technique (DeveloperName) ne peut pas être modifié après la création');
+    }
+}
+
         // Valider le BooleanFilter si renseigné
         if (!String.isBlank(rule.BooleanFilter__c)) {
             validateBooleanFilter(rule.BooleanFilter__c, items);

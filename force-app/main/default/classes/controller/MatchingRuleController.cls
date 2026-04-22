@@ -81,6 +81,13 @@ public with sharing class MatchingRuleController {
 public static Id saveFullRule(ADM_MatchingRule__c rule,
                               List<ADM_MatchingRuleItem__c> items) {
     try {
+
+        // Si c'est une mise à jour, ne pas modifier le DeveloperName
+        if (rule.Id != null) {
+            ADM_MatchingRule__c existing = service.getFullRule(rule.Id).rule;
+            rule.DeveloperName__c = existing.DeveloperName__c;
+        }
+        
         // 🔥 Nettoyer les items : supprimer les Id pour forcer l'insert
         if (items != null) {
             for (ADM_MatchingRuleItem__c item : items) {
