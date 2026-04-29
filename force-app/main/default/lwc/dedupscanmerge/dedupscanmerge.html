@@ -1,0 +1,402 @@
+<template>
+    <div class="slds-var-p-around_medium">
+        <!-- Page Header -->
+        <div class="slds-page-header slds-var-m-bottom_medium">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="utility:search" size="medium"></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                            <h1 class="slds-page-header__title">Scan and Merge</h1>
+                            <p class="slds-page-header__name-meta">
+                                {totalDuplicates} doublons détectés | {selectedCount} sélectionnés
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-page-header__col-actions">
+                    <div class="slds-page-header__controls">
+                        <div class="slds-page-header__control">
+                            <lightning-button
+                                label="Exporter la liste"
+                                icon-name="utility:download"
+                                onclick={handleExport}>
+                            </lightning-button>
+                        </div>
+                        <div class="slds-page-header__control">
+                            <lightning-button
+                                label="Fusionner la sélection"
+                                icon-name="utility:merge"
+                                disabled={isMergeDisabled}
+                                onclick={handleMergeSelected}>
+                            </lightning-button>
+                        </div>
+                        <div class="slds-page-header__control">
+                            <lightning-button
+                                variant="brand"
+                                label="Nouveau scan"
+                                icon-name="utility:refresh"
+                                onclick={handleOpenScanModal}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scan Config Modal -->
+        <template if:true={showScanModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick={handleCloseScanModal}>
+                            <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                        </button>
+                        <h2 class="slds-modal__title">Configurer et lancer un scan</h2>
+                    </header>
+                    <div class="slds-modal__content slds-var-p-around_medium">
+                        <div class="slds-form slds-form_stacked">
+                            <!-- Objet à scanner -->
+                            <lightning-combobox
+                                label="Objet à scanner"
+                                options={objectScanOptions}
+                                value={scanConfig.objectApiName}
+                                data-field="objectApiName"
+                                onchange={handleScanConfigChange}>
+                            </lightning-combobox>
+                            
+                            <!-- Matching Rules (multi-sélection) -->
+                            
+                            <div class="slds-form-element">
+    <label class="slds-form-element__label">Règles de matching</label>
+    <div class="slds-form-element__control">
+        <div class="slds-var-p-around_xx-small slds-var-m-bottom_xx-small">
+            <template for:each={matchingRuleOptionsWithCheck} for:item="rule">
+                <div key={rule.value} class="slds-var-m-bottom_xx-small">
+                    <lightning-input
+                        type="checkbox"
+                        label={rule.label}
+                        value={rule.value}
+                        checked={rule.checked}
+                        data-rule-value={rule.value}
+                        onchange={handleRuleSelection}>
+                    </lightning-input>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+                            
+                            <!-- Périmètre -->
+                            <lightning-combobox
+                                label="Périmètre"
+                                options={scopeOptions}
+                                value={scanConfig.scope}
+                                data-field="scope"
+                                onchange={handleScanConfigChange}>
+                            </lightning-combobox>
+                            
+                            <!-- Limite d'enregistrements -->
+                            <lightning-input
+                                type="number"
+                                label="Limite enregistrements (0 = aucune limite)"
+                                value={scanConfig.recordLimit}
+                                data-field="recordLimit"
+                                onchange={handleScanConfigChange}>
+                            </lightning-input>
+                            
+                            <!-- Mode d'exécution -->
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label">Mode d'exécution</label>
+                                <div class="slds-radio_button-group">
+                                    <lightning-radio-group
+                                        name="executionMode"
+                                        options={executionModeOptions}
+                                        value={scanConfig.executionMode}
+                                        type="button"
+                                        onchange={handleExecutionModeChange}>
+                                    </lightning-radio-group>
+                                </div>
+                            </div>
+                            
+                            <!-- Planification (si mode différé) -->
+                            <template if:true={showScheduleOptions}>
+                                <lightning-input
+                                    type="datetime-local"
+                                    label="Date et heure de début"
+                                    value={scanConfig.scheduledDateTime}
+                                    data-field="scheduledDateTime"
+                                    onchange={handleScanConfigChange}>
+                                </lightning-input>
+                                
+                                <template if:true={showRecurrenceOptions}>
+                                    <lightning-combobox
+                                        label="Fréquence"
+                                        options={recurrenceOptions}
+                                        value={scanConfig.recurrence}
+                                        data-field="recurrence"
+                                        onchange={handleScanConfigChange}>
+                                    </lightning-combobox>
+                                    
+                                    <template if:true={showCustomRecurrence}>
+                                        <div class="slds-grid slds-gutters">
+                                            <div class="slds-col">
+                                                <lightning-input
+                                                    type="number"
+                                                    label="Tous les (jours)"
+                                                    value={scanConfig.recurrenceInterval}
+                                                    data-field="recurrenceInterval"
+                                                    onchange={handleScanConfigChange}>
+                                                </lightning-input>
+                                            </div>
+                                            <div class="slds-col">
+                                                <lightning-combobox
+                                                    label="Fin de répétition"
+                                                    options={recurrenceEndOptions}
+                                                    value={scanConfig.recurrenceEnd}
+                                                    data-field="recurrenceEnd"
+                                                    onchange={handleScanConfigChange}>
+                                                </lightning-combobox>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </template>
+                            </template>
+                            
+                            <!-- Options -->
+                            <lightning-input
+                                type="toggle"
+                                label="Fusionner auto les correspondances à 100%"
+                                checked={scanConfig.autoMergeExact}
+                                data-field="autoMergeExact"
+                                onchange={handleScanConfigChange}>
+                            </lightning-input>
+
+                            <lightning-input
+                                type="toggle"
+                                label="Envoyer un email de rapport à la fin"
+                                checked={scanConfig.sendReport}
+                                data-field="sendReport"
+                                onchange={handleScanConfigChange}>
+                            </lightning-input>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Annuler" onclick={handleCloseScanModal}></lightning-button>
+                        <lightning-button variant="brand" label={scanButtonLabel} icon-name="utility:play" onclick={handleLaunchScan}></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <!-- Active Scans Progress Banners -->
+         <!-- Toasts pour les scans en cours (non bloquant) -->
+        <template if:true={hasActiveScans}>
+            <div class="scan-toast-container">
+                <template for:each={activeScans} for:item="scan">
+                    <div key={scan.id} class="scan-toast">
+                        <div class="scan-toast-header">
+                            <lightning-spinner size="small" alternative-text="Scan en cours..."></lightning-spinner>
+                            <span class="scan-toast-title">{scan.name}</span>
+                            <lightning-button-icon 
+                                icon-name="utility:close" 
+                                size="x-small" 
+                                variant="border-filled"
+                                data-scan-id={scan.id} 
+                                onclick={handleCancelScan}>
+                            </lightning-button-icon>
+                        </div>
+                        <div class="scan-toast-progress">
+                            <lightning-progress-bar value={scan.progress} size="small" class="scan-toast-bar"></lightning-progress-bar>
+                            <span class="scan-toast-pct">{scan.progressLabel}</span>
+                        </div>
+                        <div class="scan-toast-meta">{scan.processed} / {scan.total} enregistrements</div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Filters -->
+        <div class="scan-filters slds-var-m-bottom_small">
+            <lightning-combobox
+                label=""
+                placeholder="Tous les objets"
+                options={objectFilterOptions}
+                value={filterObject}
+                onchange={handleObjectFilter}
+                class="filter-item">
+            </lightning-combobox>
+            <lightning-combobox
+                label=""
+                placeholder="Toutes les règles"
+                options={ruleFilterOptions}
+                value={filterRule}
+                onchange={handleRuleFilter}
+                class="filter-item">
+            </lightning-combobox>
+            <lightning-combobox
+                label=""
+                placeholder="Tous les statuts"
+                options={statusFilterOptions}
+                value={filterStatus}
+                onchange={handleStatusFilter}
+                class="filter-item">
+            </lightning-combobox>
+            <lightning-slider
+                label="Confiance min."
+                min="50"
+                max="100"
+                step="5"
+                value={filterConfidence}
+                onchange={handleConfidenceFilter}
+                class="filter-slider">
+            </lightning-slider>
+            <span class="filter-confidence-label">≥ {filterConfidence}%</span>
+        </div>
+
+        <!-- Duplicates Table -->
+        <lightning-card icon-name="utility:merge">
+            <div slot="title">
+                Groupes de doublons
+                <lightning-badge label={groupesLabel}></lightning-badge>
+            </div>
+            <div slot="actions">
+                <lightning-button label="Tout sélectionner" variant="base" onclick={handleSelectAll}></lightning-button>
+                <lightning-button label="Désélectionner" variant="base" onclick={handleDeselectAll}></lightning-button>
+            </div>
+            <div class="slds-var-p-around_none">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="col-check"><input type="checkbox" onchange={handleSelectAllToggle} checked={allSelected}/></th>
+                            <th>Objet</th>
+                            <th>Règle utilisée</th>
+                            <th>Confiance</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={paginatedGroups} for:item="group">
+                            <tr key={group.id} class={group.rowClass} data-group-id={group.id} onclick={handleRowClick}>
+                                <td class="col-check" onclick={handleCheckboxClick}>
+                                    <input
+                                        type="checkbox"
+                                        checked={group.selected}
+                                        data-group-id={group.id}
+                                        onchange={handleRowSelect}>
+                                </td>
+                                <td>
+                                    <div class="obj-pill" style={group.objPillStyle}>{group.objectLabel}</div>
+                                </td>
+                                <td class="cell-rule">{group.ruleName}</td>
+                                <td>
+                                    <div class="confidence-display">
+                                        <div class="confidence-bar">
+                                            <div class="confidence-fill" style={group.confidenceStyle}></div>
+                                        </div>
+                                        <span class="confidence-pct" style={group.confidenceTextStyle}>{group.confidenceLabel}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <lightning-badge label={group.statusLabel} class={group.statusClass}></lightning-badge>
+                                </td>
+                                <td>
+                                    <div class="action-btns">
+                                        <lightning-button-icon
+                                            icon-name="utility:preview"
+                                            variant="border-filled"
+                                            size="small"
+                                            title="Prévisualiser"
+                                            data-group-id={group.id}
+                                            onclick={handlePreview}>
+                                        </lightning-button-icon>
+                                        <lightning-button-icon
+                                            icon-name="utility:merge"
+                                            variant="border-filled"
+                                            size="small"
+                                            title="Fusionner"
+                                            data-group-id={group.id}
+                                            onclick={handleMergeOne}>
+                                        </lightning-button-icon>
+                                        <lightning-button-icon
+                                            icon-name="utility:close"
+                                            variant="border-filled"
+                                            size="small"
+                                            title="Ignorer"
+                                            data-group-id={group.id}
+                                            onclick={handleIgnore}>
+                                        </lightning-button-icon>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                        <template if:true={isFilteredGroupsEmpty}>
+                            <tr>
+                                <td colspan="6" class="slds-align_absolute-center slds-var-p-vertical_medium">
+                                    Aucun groupe de doublons trouvé
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" slot="footer">
+                <span class="pagination-info">Affichage {paginationStart} - {paginationEnd} sur {filteredGroupsCount}</span>
+                <lightning-button-icon icon-name="utility:chevronleft" variant="border-filled" size="small" disabled={isPrevDisabled} onclick={handlePrevPage}></lightning-button-icon>
+                <span class="page-indicator">Page {currentPage} / {totalPages}</span>
+                <lightning-button-icon icon-name="utility:chevronright" variant="border-filled" size="small" disabled={isNextDisabled} onclick={handleNextPage}></lightning-button-icon>
+            </div>
+        </lightning-card>
+
+        <!-- Merge Preview Modal -->
+        <template if:true={showPreviewModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick={handleClosePreview}>
+                            <lightning-icon icon-name="utility:close" size="small" variant="inverse"></lightning-icon>
+                        </button>
+                        <h2 class="slds-modal__title">Prévisualisation des doublons - Groupe {previewGroup.id}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-var-p-around_medium">
+                        <div class="preview-grid">
+                            <template for:each={previewGroup.records} for:item="record">
+                                <div key={record.id} class="preview-record-card">
+                                    <div class="preview-record-header">
+                                        <lightning-icon icon-name="utility:record" size="x-small"></lightning-icon>
+                                        <span class="preview-record-name">{record.name}</span>
+                                        <template if:true={record.isMaster}>
+    <span class="slds-badge slds-theme_success">Principal</span>
+</template>
+<template if:false={record.isMaster}>
+    <span class="slds-badge slds-theme_warning">Doublon</span>
+</template>                                    </div>
+                                    <div class="preview-record-fields">
+                                        <template for:each={record.fields} for:item="field">
+                                            <div key={field.id} class="preview-field-row">
+                                                <span class="preview-field-label">{field.label}</span>
+                                                <span class="preview-field-value">{field.value}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button label="Annuler" onclick={handleClosePreview}></lightning-button>
+                        <lightning-button label="Ignorer ce groupe" onclick={handleIgnoreFromPreview}></lightning-button>
+                        <lightning-button variant="brand" label="Confirmer la fusion" icon-name="utility:merge" onclick={handleConfirmMerge}></lightning-button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </div>
+</template>
