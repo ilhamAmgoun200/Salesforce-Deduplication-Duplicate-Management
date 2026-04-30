@@ -11,6 +11,10 @@ const OBJ_COLORS = {
 export default class ScanJobs extends LightningElement {
     
     // ========== Données des jobs ==========
+
+    @track searchTerm = '';
+    @track filterObject = '';
+
     @track jobs = [
         {
             id: 'job1',
@@ -46,7 +50,8 @@ export default class ScanJobs extends LightningElement {
             scheduledDateTime: new Date('2025-04-25T08:00:00'),
             completedDate: null,
             autoMergeExact: false,
-            sendReport: true
+            sendReport: true,
+            scheduleType: 'ONCE'
         },
         {
             id: 'job3',
@@ -94,7 +99,10 @@ export default class ScanJobs extends LightningElement {
         scheduledDateTime: '',
         recurrence: 'DAILY',
         autoMergeExact: true,
-        sendReport: false
+        sendReport: false,
+        emailRecipients: '',
+        startDateTime: '',
+        endDateTime: ''
     };
     
     @track editJobConfig = {
@@ -102,6 +110,8 @@ export default class ScanJobs extends LightningElement {
         recordLimit: 0,
         selectedRules: []
     };
+    
+    @track mergeResultFields = [];
     
     // ========== Options ==========
     objectOptions = [
@@ -136,32 +146,89 @@ export default class ScanJobs extends LightningElement {
         { label: 'Mensuel', value: 'MONTHLY' }
     ];
     
-    // ========== Getters ==========
-    
-    get totalJobs() { return this.jobs.length; }
-    get runningJobsCount() { return this.jobs.filter(j => j.status === 'RUNNING').length; }
-    get scheduledJobsCount() { return this.jobs.filter(j => j.status === 'SCHEDULED').length; }
-    get completedJobsCount() { return this.jobs.filter(j => j.status === 'COMPLETED').length; }
+    // ========== Getters - Jobs bruts ==========
     
     get runningJobs() { return this.jobs.filter(j => j.status === 'RUNNING'); }
-    get scheduledJobs() { return this.jobs.filter(j => j.status === 'SCHEDULED'); }
+    get pausedJobs() { return this.jobs.filter(j => j.status === 'PAUSED'); }
+    get scheduledJobs() { 
+        return this.jobs.filter(j => j.status === 'SCHEDULED').map(j => ({
+            ...j,
+            scheduledDateLabel: j.scheduledDateTime ? new Date(j.scheduledDateTime).toLocaleString() : 'À définir',
+            nextRunDate: this.getNextRunDate(j),
+            scheduleType: j.scheduleType || 'ONCE',
+            scheduleTypeLabel: j.scheduleType === 'RECURRING' ? 'Périodique' : 'Unique'
+        }));
+    }
     get completedJobs() { return this.jobs.filter(j => j.status === 'COMPLETED'); }
     
-    get hasRunningJobs() { return this.runningJobs.length > 0; }
-    get hasScheduledJobs() { return this.scheduledJobs.length > 0; }
-    get hasCompletedJobs() { return this.completedJobs.length > 0; }
+    // ========== Getters - Jobs filtrés ==========
+    
+    get filteredRunningJobs() {
+        return this.runningJobs.filter(job => {
+            const matchSearch = !this.searchTerm || job.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+            const matchObject = !this.filterObject || job.objectApiName === this.filterObject;
+            return matchSearch && matchObject;
+        });
+    }
+    
+    get filteredPausedJobs() {
+        return this.pausedJobs.filter(job => {
+            const matchSearch = !this.searchTerm || job.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+            const matchObject = !this.filterObject || job.objectApiName === this.filterObject;
+            return matchSearch && matchObject;
+        });
+    }
+    
+    get filteredScheduledJobs() {
+        return this.scheduledJobs.filter(job => {
+            const matchSearch = !this.searchTerm || job.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+            const matchObject = !this.filterObject || job.objectApiName === this.filterObject;
+            return matchSearch && matchObject;
+        });
+    }
+    
+    get filteredCompletedJobs() {
+        return this.completedJobs.filter(job => {
+            const matchSearch = !this.searchTerm || job.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+            const matchObject = !this.filterObject || job.objectApiName === this.filterObject;
+            return matchSearch && matchObject;
+        });
+    }
+    
+    // ========== Getters - Affichage ==========
+    
+    get displayRunningJobs() { return this.filteredRunningJobs; }
+    get displayPausedJobs() { return this.filteredPausedJobs; }
+    get displayScheduledJobs() { return this.filteredScheduledJobs; }
+    get displayCompletedJobs() { return this.filteredCompletedJobs; }
+    
+    // ========== Getters - Compteurs ==========
+    
+    get totalJobs() { return this.jobs.length; }
+    get runningJobsCount() { return this.filteredRunningJobs.length; }
+    get pausedJobsCount() { return this.filteredPausedJobs.length; }
+    get scheduledJobsCount() { return this.filteredScheduledJobs.length; }
+    get completedJobsCount() { return this.filteredCompletedJobs.length; }
+    
+    get hasRunningJobs() { return this.filteredRunningJobs.length > 0; }
+    get hasPausedJobs() { return this.filteredPausedJobs.length > 0; }
+    get hasScheduledJobs() { return this.filteredScheduledJobs.length > 0; }
+    get hasCompletedJobs() { return this.filteredCompletedJobs.length > 0; }
+    
+    // ========== Getters - Onglets ==========
     
     get showRunning() { return this.selectedTab === 'RUNNING'; }
+    get showPaused() { return this.selectedTab === 'PAUSED'; }
     get showScheduled() { return this.selectedTab === 'SCHEDULED'; }
     get showCompleted() { return this.selectedTab === 'COMPLETED'; }
-    get showScheduleDate() { return this.newScanConfig.executionMode === 'SCHEDULED'; }
-    get showRecurrenceOptions() { return this.newScanConfig.executionMode === 'RECURRING'; }
     
     get runningTabClass() { return this.selectedTab === 'RUNNING' ? 'slds-tabs_default__item slds-is-active' : 'slds-tabs_default__item'; }
+    get pausedTabClass() { return this.selectedTab === 'PAUSED' ? 'slds-tabs_default__item slds-is-active' : 'slds-tabs_default__item'; }
     get scheduledTabClass() { return this.selectedTab === 'SCHEDULED' ? 'slds-tabs_default__item slds-is-active' : 'slds-tabs_default__item'; }
     get completedTabClass() { return this.selectedTab === 'COMPLETED' ? 'slds-tabs_default__item slds-is-active' : 'slds-tabs_default__item'; }
     
-    // Getters pour les étapes
+    // ========== Getters - Modale nouveau scan ==========
+    
     get isStep1() { return this.currentStep === 1; }
     get isStep2() { return this.currentStep === 2; }
     get isStep3() { return this.currentStep === 3; }
@@ -169,6 +236,9 @@ export default class ScanJobs extends LightningElement {
     get isLastStep() { return this.currentStep === 5; }
     get hasPreviousStep() { return this.currentStep > 1; }
     get hasNextStep() { return this.currentStep < 5; }
+    
+    get showScheduleDate() { return this.newScanConfig.executionMode === 'SCHEDULED'; }
+    get showRecurrenceOptions() { return this.newScanConfig.executionMode === 'RECURRING'; }
     
     get finalButtonLabel() {
         const mode = this.newScanConfig.executionMode;
@@ -181,6 +251,20 @@ export default class ScanJobs extends LightningElement {
     get previewGroupName() { return this.previewGroup?.masterName || ''; }
     get isRunningJobDetail() { return this.selectedJobDetail?.status === 'RUNNING'; }
     get isScheduledJobDetail() { return this.selectedJobDetail?.status === 'SCHEDULED'; }
+    
+    get previewGroupRecords() {
+        return this.previewGroup?.records || [];
+    }
+    
+    // ========== Getters - Options ==========
+    
+    get objectFilterOptions() {
+        const uniqueObjects = [...new Set(this.jobs.map(job => job.objectApiName))];
+        return [
+            { label: 'Tous les objets', value: '' },
+            ...uniqueObjects.map(obj => ({ label: obj, value: obj }))
+        ];
+    }
     
     get matchingRuleOptionsWithCheck() {
         const selectedRules = this.newScanConfig.selectedRules;
@@ -201,27 +285,41 @@ export default class ScanJobs extends LightningElement {
     get editingJobScope() { return this.editJobConfig.scope; }
     get editingJobRecordLimit() { return this.editJobConfig.recordLimit; }
     
-    get previewGroupRecords() {
-        return this.previewGroup?.records || [];
+    // ========== Méthodes utilitaires ==========
+    
+    getNextRunDate(job) {
+        if (job.scheduleType !== 'RECURRING') {
+            return job.scheduledDateTime ? new Date(job.scheduledDateTime).toLocaleString() : null;
+        }
+        
+        const now = new Date();
+        const startDate = job.startDateTime ? new Date(job.startDateTime) : null;
+        if (!startDate) return null;
+        
+        let nextDate = new Date(startDate);
+        const recurrence = job.recurrence;
+        const interval = job.recurrenceInterval || 1;
+        
+        while (nextDate < now) {
+            if (recurrence === 'DAILY') {
+                nextDate.setDate(nextDate.getDate() + interval);
+            } else if (recurrence === 'WEEKLY') {
+                nextDate.setDate(nextDate.getDate() + (7 * interval));
+            } else if (recurrence === 'MONTHLY') {
+                nextDate.setMonth(nextDate.getMonth() + interval);
+            }
+        }
+        
+        const endDate = job.endDateTime ? new Date(job.endDateTime) : null;
+        if (endDate && nextDate > endDate) {
+            return 'Terminé';
+        }
+        
+        return nextDate.toLocaleString();
     }
     
-    // ========== Handlers - Navigation ==========
-    
-    handleShowRunning() { this.selectedTab = 'RUNNING'; }
-    handleShowScheduled() { this.selectedTab = 'SCHEDULED'; }
-    handleShowCompleted() { this.selectedTab = 'COMPLETED'; }
-    
-    // ========== Handlers - Nouveau scan multi-étapes ==========
-    
-    handleNewScan() {
-        this.currentStep = 1;
-        this.showNewScanModal = true;
-    }
-    
-    handleCloseNewScanModal() {
-        this.showNewScanModal = false;
-        this.resetNewScanConfig();
-        this.currentStep = 1;
+    showToast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
     
     resetNewScanConfig() {
@@ -234,13 +332,67 @@ export default class ScanJobs extends LightningElement {
             scheduledDateTime: '',
             recurrence: 'DAILY',
             autoMergeExact: true,
-            sendReport: false
+            sendReport: false,
+            emailRecipients: '', 
+            startDateTime: '',
+            endDateTime: ''
         };
+    }
+    
+    initializeMergeResult() {
+        if (this.previewGroup && this.previewGroup.records) {
+            const masterRecord = this.previewGroup.records.find(r => r.isMaster === true);
+            if (masterRecord) {
+                this.mergeResultFields = masterRecord.fields.map(field => ({
+                    id: field.id,
+                    label: field.label,
+                    value: field.value,
+                    sourceLabel: masterRecord.name
+                }));
+            }
+        }
+    }
+    
+    // ========== Handlers - Navigation ==========
+    
+    handleShowRunning() { this.selectedTab = 'RUNNING'; }
+    handleShowPaused() { this.selectedTab = 'PAUSED'; }
+    handleShowScheduled() { this.selectedTab = 'SCHEDULED'; }
+    handleShowCompleted() { this.selectedTab = 'COMPLETED'; }
+    
+    handleSearchChange(event) {
+        this.searchTerm = event.detail.value;
+    }
+    
+    handleObjectFilterChange(event) {
+        this.filterObject = event.detail.value;
+    }
+    
+    // ========== Handlers - Nouveau scan ==========
+    
+    handleNewScan() {
+        this.currentStep = 1;
+        this.showNewScanModal = true;
+    }
+    
+    handleCloseNewScanModal() {
+        this.showNewScanModal = false;
+        this.resetNewScanConfig();
+        this.currentStep = 1;
     }
     
     handleNewScanChange(event) {
         const field = event.currentTarget.dataset.field;
+         const value = event.detail.value;
+    
+    console.log('🟢 handleNewScanChange - field:', field, 'value:', value);
+    
         this.newScanConfig = { ...this.newScanConfig, [field]: event.detail.value };
+
+         if (field === 'sendReport') {
+        console.log('📧 sendReport est maintenant:', this.newScanConfig.sendReport);
+        this.newScanConfig = { ...this.newScanConfig };
+    }
     }
     
     handleRuleCheckbox(event) {
@@ -296,7 +448,12 @@ export default class ScanJobs extends LightningElement {
             scheduledDateTime: config.executionMode !== 'IMMEDIATE' ? new Date(config.scheduledDateTime) : null,
             completedDate: null,
             autoMergeExact: config.autoMergeExact,
-            sendReport: config.sendReport
+            sendReport: config.sendReport,
+            emailRecipients: config.emailRecipients,
+            scheduleType: config.executionMode === 'RECURRING' ? 'RECURRING' : 'ONCE',
+            startDateTime: config.executionMode === 'RECURRING' ? config.startDateTime : null,
+            endDateTime: config.executionMode === 'RECURRING' ? config.endDateTime : null,
+            recurrence: config.executionMode === 'RECURRING' ? config.recurrence : null
         };
         
         this.jobs = [...this.jobs, newJob];
@@ -342,7 +499,7 @@ export default class ScanJobs extends LightningElement {
         }, 800);
     }
     
-    // ========== Handlers - Sélection et détails des jobs ==========
+    // ========== Handlers - Actions sur les jobs ==========
     
     handleSelectJob(event) {
         const jobId = event.currentTarget.dataset.jobId;
@@ -402,35 +559,27 @@ export default class ScanJobs extends LightningElement {
         ];
     }
     
-    // ========== Handlers - Actions sur les jobs ==========
-    
     handlePauseJob(event) {
         event.stopPropagation();
         const jobId = event.currentTarget.dataset.jobId;
         this.jobs = this.jobs.map(j => j.id === jobId ? { ...j, status: 'PAUSED' } : j);
         this.showToast('Scan en pause', 'Le scan a été mis en pause', 'warning');
-        
-        if (this.showJobDetailModal && this.selectedJobDetail?.id === jobId) {
-            this.selectedJobDetail = { ...this.selectedJobDetail, status: 'PAUSED' };
+    }
+    
+    handleResumeJob(event) {
+        event.stopPropagation();
+        const jobId = event.currentTarget.dataset.jobId;
+        const job = this.jobs.find(j => j.id === jobId);
+        if (job && job.status === 'PAUSED') {
+            this.jobs = this.jobs.map(j => j.id === jobId ? { ...j, status: 'RUNNING' } : j);
+            this.showToast('Scan repris', `Le scan ${job.name} a été repris`, 'success');
+            this.simulateScanProgress(jobId);
         }
     }
     
     handleStopJob(event) {
         event.stopPropagation();
         this.jobToDelete = this.jobs.find(j => j.id === event.currentTarget.dataset.jobId);
-        this.showDeleteConfirmModal = true;
-    }
-    
-    handlePauseJobFromDetail() {
-        if (this.selectedJobDetail) {
-            this.jobs = this.jobs.map(j => j.id === this.selectedJobDetail.id ? { ...j, status: 'PAUSED' } : j);
-            this.selectedJobDetail = { ...this.selectedJobDetail, status: 'PAUSED' };
-            this.showToast('Scan en pause', 'Le scan a été mis en pause', 'warning');
-        }
-    }
-    
-    handleStopJobFromDetail() {
-        this.jobToDelete = this.selectedJobDetail;
         this.showDeleteConfirmModal = true;
     }
     
@@ -447,6 +596,158 @@ export default class ScanJobs extends LightningElement {
             };
             this.showEditJobModal = true;
         }
+    }
+    
+    handleDeleteJob(event) {
+        event.stopPropagation();
+        const jobId = event.currentTarget.dataset.jobId;
+        this.jobToDelete = this.jobs.find(j => j.id === jobId);
+        this.showDeleteConfirmModal = true;
+    }
+    
+    handleConfirmDelete() {
+        if (this.jobToDelete) {
+            this.jobs = this.jobs.filter(j => j.id !== this.jobToDelete.id);
+            this.showToast('Supprimé', 'Le scan a été supprimé', 'success');
+            
+            if (this.showJobDetailModal && this.selectedJobDetail?.id === this.jobToDelete.id) {
+                this.showJobDetailModal = false;
+                this.selectedJobDetail = null;
+            }
+        }
+        this.showDeleteConfirmModal = false;
+        this.jobToDelete = null;
+    }
+    
+    handleExportCsv(event) {
+        event.stopPropagation();
+        const jobId = event.currentTarget.dataset.jobId;
+        const job = this.jobs.find(j => j.id === jobId);
+        this.showToast('Export CSV', `Export des doublons pour ${job.name} en cours...`, 'info');
+    }
+    
+    handleExportCurrentCsv() {
+        this.showToast('Export CSV', 'Export en cours...', 'info');
+    }
+    
+    // ========== Handlers - Modals ==========
+    
+    handleCloseJobDetailModal() {
+        this.showJobDetailModal = false;
+        this.selectedJobDetail = null;
+    }
+    
+    handleCloseEditJobModal() {
+        this.showEditJobModal = false;
+        this.editingJob = null;
+    }
+    
+    handleCloseDeleteConfirmModal() {
+        this.showDeleteConfirmModal = false;
+        this.jobToDelete = null;
+    }
+    
+    handleCloseDuplicatesModal() {
+        this.showDuplicatesModal = false;
+        this.selectedJob = null;
+        this.duplicateGroups = [];
+    }
+    
+    handleOpenGroupPreview(event) {
+        event.stopPropagation();
+        const groupId = event.currentTarget.dataset.groupId;
+        this.previewGroup = this.duplicateGroups.find(g => g.id === groupId);
+        this.initializeMergeResult(); 
+        this.showPreviewModal = true;
+    }
+    
+    handlePreviewGroup(event) {
+        event.stopPropagation();
+        const groupId = event.currentTarget.dataset.groupId;
+        this.previewGroup = this.duplicateGroups.find(g => g.id === groupId);
+        this.initializeMergeResult(); 
+        this.showPreviewModal = true;
+    }
+    
+    handleMergeGroup(event) {
+        event.stopPropagation();
+        const groupId = event.currentTarget.dataset.groupId;
+        const group = this.duplicateGroups.find(g => g.id === groupId);
+        
+        if (group) {
+            this.previewGroup = group;
+            if (this.previewGroup && this.previewGroup.records) {
+                const masterRecord = this.previewGroup.records.find(r => r.isMaster === true);
+                if (masterRecord) {
+                    this.mergeResultFields = masterRecord.fields.map(field => ({
+                        id: field.id,
+                        label: field.label,
+                        value: field.value,
+                        sourceLabel: masterRecord.name
+                    }));
+                }
+            }
+            this.showPreviewModal = true;
+            this.showDuplicatesModal = false;
+        }
+    }
+    
+    handleClosePreviewModal() {
+        this.showPreviewModal = false;
+        this.previewGroup = null;
+        this.mergeResultFields = [];
+    }
+    
+    handleSelectMergeValue(event) {
+        const fieldId = event.currentTarget.dataset.fieldId;
+        const fieldLabel = event.currentTarget.dataset.fieldLabel;
+        const fieldValue = event.currentTarget.dataset.fieldValue;
+        const recordId = event.currentTarget.dataset.recordId;
+        const record = this.previewGroup.records.find(r => r.id === recordId);
+        const sourceLabel = record.name;
+        
+        const existingIndex = this.mergeResultFields.findIndex(f => f.id === fieldId);
+        if (existingIndex >= 0) {
+            const updatedFields = [...this.mergeResultFields];
+            updatedFields[existingIndex] = {
+                ...updatedFields[existingIndex],
+                value: fieldValue,
+                sourceLabel: sourceLabel
+            };
+            this.mergeResultFields = updatedFields;
+        } else {
+            this.mergeResultFields = [
+                ...this.mergeResultFields,
+                {
+                    id: fieldId,
+                    label: fieldLabel,
+                    value: fieldValue,
+                    sourceLabel: sourceLabel
+                }
+            ];
+        }
+        
+        this.showToast('Valeur sélectionnée', `${fieldLabel} mis à jour avec la valeur de ${sourceLabel}`, 'success');
+    }
+    
+    handleConfirmMergeFromPreview() {
+        this.showToast('Fusion', 'Les enregistrements ont été fusionnés avec succès', 'success');
+        this.showPreviewModal = false;
+        this.previewGroup = null;
+        this.mergeResultFields = [];
+    }
+    
+    handlePauseJobFromDetail() {
+        if (this.selectedJobDetail) {
+            this.jobs = this.jobs.map(j => j.id === this.selectedJobDetail.id ? { ...j, status: 'PAUSED' } : j);
+            this.selectedJobDetail = { ...this.selectedJobDetail, status: 'PAUSED' };
+            this.showToast('Scan en pause', 'Le scan a été mis en pause', 'warning');
+        }
+    }
+    
+    handleStopJobFromDetail() {
+        this.jobToDelete = this.selectedJobDetail;
+        this.showDeleteConfirmModal = true;
     }
     
     handleEditJobFromDetail() {
@@ -510,83 +811,5 @@ export default class ScanJobs extends LightningElement {
             this.editingJob = null;
             this.showToast('Scan modifié', 'Les modifications ont été enregistrées', 'success');
         }
-    }
-    
-    handleDeleteJob(event) {
-        event.stopPropagation();
-        const jobId = event.currentTarget.dataset.jobId;
-        this.jobToDelete = this.jobs.find(j => j.id === jobId);
-        this.showDeleteConfirmModal = true;
-    }
-    
-    handleConfirmDelete() {
-        if (this.jobToDelete) {
-            this.jobs = this.jobs.filter(j => j.id !== this.jobToDelete.id);
-            this.showToast('Supprimé', 'Le scan a été supprimé', 'success');
-            
-            if (this.showJobDetailModal && this.selectedJobDetail?.id === this.jobToDelete.id) {
-                this.showJobDetailModal = false;
-                this.selectedJobDetail = null;
-            }
-        }
-        this.showDeleteConfirmModal = false;
-        this.jobToDelete = null;
-    }
-    
-    handleCloseDeleteConfirmModal() {
-        this.showDeleteConfirmModal = false;
-        this.jobToDelete = null;
-    }
-    
-    handleExportCsv(event) {
-        event.stopPropagation();
-        const jobId = event.currentTarget.dataset.jobId;
-        const job = this.jobs.find(j => j.id === jobId);
-        this.showToast('Export CSV', `Export des doublons pour ${job.name} en cours...`, 'info');
-    }
-    
-    handleExportCurrentCsv() {
-        this.showToast('Export CSV', 'Export en cours...', 'info');
-    }
-    
-    // ========== Handlers - Modals ==========
-    
-    handleCloseJobDetailModal() {
-        this.showJobDetailModal = false;
-        this.selectedJobDetail = null;
-    }
-    
-    handleCloseEditJobModal() {
-        this.showEditJobModal = false;
-        this.editingJob = null;
-    }
-    
-    handleCloseDuplicatesModal() {
-        this.showDuplicatesModal = false;
-        this.selectedJob = null;
-        this.duplicateGroups = [];
-    }
-    
-    handleOpenGroupPreview(event) {
-        event.stopPropagation();
-        const groupId = event.currentTarget.dataset.groupId;
-        this.previewGroup = this.duplicateGroups.find(g => g.id === groupId);
-        this.showPreviewModal = true;
-    }
-    
-    handlePreviewGroup(event) {
-        event.stopPropagation();
-        const groupId = event.currentTarget.dataset.groupId;
-        this.previewGroup = this.duplicateGroups.find(g => g.id === groupId);
-        this.showPreviewModal = true;
-    }
-    
-    handleClosePreviewModal() {
-        this.showPreviewModal = false;
-        this.previewGroup = null;
-    }
-    
-    showToast(title, message, variant) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
 }

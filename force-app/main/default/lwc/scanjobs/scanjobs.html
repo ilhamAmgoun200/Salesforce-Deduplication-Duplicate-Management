@@ -33,6 +33,9 @@
                 <a href="javascript:void(0);" class={runningTabClass} role="tab" onclick={handleShowRunning}>
                     <span class="slds-tabs_default__link">En cours ({runningJobsCount})</span>
                 </a>
+                 <a href="javascript:void(0);" class={pausedTabClass} role="tab" onclick={handleShowPaused}>
+                    <span class="slds-tabs_default__link">En pause ({pausedJobsCount})</span>
+                </a>
                 <a href="javascript:void(0);" class={scheduledTabClass} role="tab" onclick={handleShowScheduled}>
                     <span class="slds-tabs_default__link">Planifiés ({scheduledJobsCount})</span>
                 </a>
@@ -42,49 +45,88 @@
             </div>
         </div>
 
+                <!-- Barre de recherche et filtres -->
+        <div class="search-filter-bar slds-var-m-bottom_medium">
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-2">
+                    <lightning-input
+                        type="search"
+                        label="Rechercher"
+                        placeholder="Rechercher un scan par nom..."
+                        value={searchTerm}
+                        onchange={handleSearchChange}>
+                    </lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <lightning-combobox
+                        label="Filtrer par objet"
+                        placeholder="Tous les objets"
+                        options={objectFilterOptions}
+                        value={filterObject}
+                        onchange={handleObjectFilterChange}>
+                    </lightning-combobox>
+                </div>
+            </div>
+        </div>
+
         <!-- ========== LISTE DES JOBS ========== -->
-        <!-- Running Jobs -->
+        <!-- ========== TABLEAU DES JOBS ========== -->
+        
+        <!-- Running Jobs Table -->
         <template if:true={showRunning}>
             <template if:true={hasRunningJobs}>
-                <div class="jobs-list">
-                    <template for:each={runningJobs} for:item="job">
-                        <div key={job.id} class="job-card slds-var-m-bottom_small" data-job-id={job.id} onclick={handleSelectJob}>
-                            <div class="job-card__header">
-                                <div class="job-card__left">
-                                    <lightning-icon icon-name="utility:refresh" size="small" class="job-icon-running"></lightning-icon>
-                                    <div class="job-card__info">
-                                        <div class="job-card__title">{job.name}</div>
-                                        <div class="job-card__meta">Objet: {job.objectLabel}</div>
-                                        <div class="job-card__meta">Règles: {job.rulesLabel}</div>
-                                    </div>
-                                </div>
-                                <div class="job-card__right">
-                                    <div class="job-progress">
-                                        <span class="job-progress-pct">{job.progress}%</span>
-                                        <lightning-progress-bar value={job.progress} size="small"></lightning-progress-bar>
-                                    </div>
-                                    <div class="job-card__actions">
-                                        <lightning-button-icon
-                                            icon-name="utility:pause"
-                                            variant="border-filled"
-                                            size="small"
-                                            title="Pause"
-                                            data-job-id={job.id}
-                                            onclick={handlePauseJob}>
-                                        </lightning-button-icon>
-                                        <lightning-button-icon
-                                            icon-name="utility:close"
-                                            variant="border-filled"
-                                            size="small"
-                                            title="Arrêter"
-                                            data-job-id={job.id}
-                                            onclick={handleStopJob}>
-                                        </lightning-button-icon>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+                <div class="jobs-table-container">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th>Nom du scan</th>
+                                <th>Objet</th>
+                                <th>Règles utilisées</th>
+                                <th>Progression</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={displayRunningJobs} for:item="job">
+                                <tr key={job.id} data-job-id={job.id} onclick={handleSelectJob}>
+                                    <td>
+                                        <div class="job-name-cell">
+                                            <lightning-icon icon-name="utility:refresh" size="x-small" class="job-icon-running"></lightning-icon>
+                                            <span>{job.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>{job.objectLabel}</td>
+                                    <td>{job.rulesLabel}</td>
+                                    <td>
+                                        <div class="job-progress-cell">
+                                            <lightning-progress-bar value={job.progress} size="small"></lightning-progress-bar>
+                                            <span class="progress-pct">{job.progress}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <lightning-button-icon
+                                                icon-name="utility:pause"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Pause"
+                                                data-job-id={job.id}
+                                                onclick={handlePauseJob}>
+                                            </lightning-button-icon>
+                                            <lightning-button-icon
+                                                icon-name="utility:close"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Arrêter"
+                                                data-job-id={job.id}
+                                                onclick={handleStopJob}>
+                                            </lightning-button-icon>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </template>
             <template if:false={hasRunningJobs}>
@@ -95,45 +137,136 @@
             </template>
         </template>
 
-        <!-- Scheduled Jobs -->
+        <!-- Paused Jobs Table -->
+        <template if:true={showPaused}>
+            <template if:true={hasPausedJobs}>
+                <div class="jobs-table-container">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th>Nom du scan</th>
+                                <th>Objet</th>
+                                <th>Règles utilisées</th>
+                                <th>Progression</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={displayPausedJobs} for:item="job">
+                                <tr key={job.id} data-job-id={job.id} onclick={handleSelectJob}>
+                                    <td>
+                                        <div class="job-name-cell">
+                                            <lightning-icon icon-name="utility:pause" size="x-small" class="job-icon-paused"></lightning-icon>
+                                            <span>{job.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>{job.objectLabel}</td>
+                                    <td>{job.rulesLabel}</td>
+                                    <td>
+                                        <div class="job-progress-cell">
+                                            <lightning-progress-bar value={job.progress} size="small"></lightning-progress-bar>
+                                            <span class="progress-pct">{job.progress}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <lightning-button-icon
+                                                icon-name="utility:play"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Reprendre"
+                                                data-job-id={job.id}
+                                                onclick={handleResumeJob}>
+                                            </lightning-button-icon>
+                                            <lightning-button-icon
+                                                icon-name="utility:close"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Supprimer"
+                                                data-job-id={job.id}
+                                                onclick={handleStopJob}>
+                                            </lightning-button-icon>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+            <template if:false={hasPausedJobs}>
+                <div class="slds-text-align_center slds-var-p-vertical_xx-large">
+                    <lightning-icon icon-name="utility:pause" size="large" variant="neutral"></lightning-icon>
+                    <p class="slds-var-m-top_small">Aucun scan en pause</p>
+                </div>
+            </template>
+        </template>
+
+        <!-- Scheduled Jobs Table -->
         <template if:true={showScheduled}>
             <template if:true={hasScheduledJobs}>
-                <div class="jobs-list">
-                    <template for:each={scheduledJobs} for:item="job">
-                        <div key={job.id} class="job-card slds-var-m-bottom_small" data-job-id={job.id} onclick={handleSelectJob}>
-                            <div class="job-card__header">
-                                <div class="job-card__left">
-                                    <lightning-icon icon-name="utility:schedule" size="small" class="job-icon-scheduled"></lightning-icon>
-                                    <div class="job-card__info">
-                                        <div class="job-card__title">{job.name}</div>
-                                        <div class="job-card__meta">Objet: {job.objectLabel}</div>
-                                        <div class="job-card__meta">Règles: {job.rulesLabel}</div>
-                                        <div class="job-card__meta">Planifié: {job.scheduledDateLabel}</div>
-                                    </div>
-                                </div>
-                                <div class="job-card__right">
-                                    <div class="job-card__actions">
-                                        <lightning-button-icon
-                                            icon-name="utility:edit"
-                                            variant="border-filled"
-                                            size="small"
-                                            title="Modifier"
-                                            data-job-id={job.id}
-                                            onclick={handleEditJob}>
-                                        </lightning-button-icon>
-                                        <lightning-button-icon
-                                            icon-name="utility:delete"
-                                            variant="border-filled"
-                                            size="small"
-                                            title="Supprimer"
-                                            data-job-id={job.id}
-                                            onclick={handleDeleteJob}>
-                                        </lightning-button-icon>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+                <div class="jobs-table-container">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th>Nom du scan</th>
+                                <th>Objet</th>
+                                <th>Règles utilisées</th>
+                                <th>Planifié le</th>
+                                <th>Type</th>
+                                <th>Prochaine exécution</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={displayScheduledJobs} for:item="job">
+                                <tr key={job.id} data-job-id={job.id} onclick={handleSelectJob}>
+                                    <td>
+                                        <div class="job-name-cell">
+                                            <lightning-icon icon-name="utility:schedule" size="x-small" class="job-icon-scheduled"></lightning-icon>
+                                            <span>{job.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>{job.objectLabel}</td>
+                                    <td>{job.rulesLabel}</td>
+                                    <td>{job.scheduledDateLabel}</td>
+                                    <td>
+            <span class="slds-badge {job.scheduleType === 'RECURRING' ? 'slds-theme_info' : 'slds-theme_neutral'}">
+                {job.scheduleTypeLabel}
+            </span>
+        </td>
+        <td>
+            <template if:true={job.nextRunDate}>
+                {job.nextRunDate}
+            </template>
+            <template if:false={job.nextRunDate}>
+                <span class="empty-value">À définir</span>
+            </template>
+        </td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <lightning-button-icon
+                                                icon-name="utility:edit"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Modifier"
+                                                data-job-id={job.id}
+                                                onclick={handleEditJob}>
+                                            </lightning-button-icon>
+                                            <lightning-button-icon
+                                                icon-name="utility:delete"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Supprimer"
+                                                data-job-id={job.id}
+                                                onclick={handleDeleteJob}>
+                                            </lightning-button-icon>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </template>
             <template if:false={hasScheduledJobs}>
@@ -144,48 +277,56 @@
             </template>
         </template>
 
-        <!-- Completed Jobs -->
+        <!-- Completed Jobs Table -->
         <template if:true={showCompleted}>
             <template if:true={hasCompletedJobs}>
-                <div class="jobs-list">
-                    <template for:each={completedJobs} for:item="job">
-                        <div key={job.id} class="job-card slds-var-m-bottom_small" data-job-id={job.id} onclick={handleSelectJob}>
-                            <div class="job-card__header">
-                                <div class="job-card__left">
-                                    <lightning-icon icon-name="utility:success" size="small" class="job-icon-completed"></lightning-icon>
-                                    <div class="job-card__info">
-                                        <div class="job-card__title">{job.name}</div>
-                                        <div class="job-card__meta">Objet: {job.objectLabel}</div>
-                                        <div class="job-card__meta">Règles: {job.rulesLabel}</div>
-                                        <div class="job-card__meta">Terminé: {job.completedDateLabel}</div>
-                                    </div>
-                                </div>
-                                <div class="job-card__right">
-                                    <div class="job-card__stats">
-                                        <span class="job-stat">{job.duplicatesFound} doublons</span>
-                                    </div>
-                                    <div class="job-card__actions">
-                                        <lightning-button-icon
-                                            icon-name="utility:download"
-                                            variant="border-filled"
-                                            size="small"
-                                            title="Exporter CSV"
-                                            data-job-id={job.id}
-                                            onclick={handleExportCsv}>
-                                        </lightning-button-icon>
-                                        <lightning-button-icon
-                                            icon-name="utility:delete"
-                                            variant="border-filled"
-                                            size="small"
-                                            title="Supprimer"
-                                            data-job-id={job.id}
-                                            onclick={handleDeleteJob}>
-                                        </lightning-button-icon>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+                <div class="jobs-table-container">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th>Nom du scan</th>
+                                <th>Objet</th>
+                                <th>Règles utilisées</th>
+                                <th>Doublons trouvés</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={displayCompletedJobs} for:item="job">
+                                <tr key={job.id} data-job-id={job.id} onclick={handleSelectJob}>
+                                    <td>
+                                        <div class="job-name-cell">
+                                            <lightning-icon icon-name="utility:success" size="x-small" class="job-icon-completed"></lightning-icon>
+                                            <span>{job.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>{job.objectLabel}</td>
+                                    <td>{job.rulesLabel}</td>
+                                    <td><span class="duplicates-count">{job.duplicatesFound}</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <lightning-button-icon
+                                                icon-name="utility:download"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Exporter CSV"
+                                                data-job-id={job.id}
+                                                onclick={handleExportCsv}>
+                                            </lightning-button-icon>
+                                            <lightning-button-icon
+                                                icon-name="utility:delete"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Supprimer"
+                                                data-job-id={job.id}
+                                                onclick={handleDeleteJob}>
+                                            </lightning-button-icon>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </template>
             <template if:false={hasCompletedJobs}>
@@ -195,7 +336,6 @@
                 </div>
             </template>
         </template>
-
         <!-- ========== MODAL : NOUVEAU SCAN (MULTI-ÉTAPES) ========== -->
         <template if:true={showNewScanModal}>
             <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open" aria-modal="true">
@@ -289,6 +429,24 @@
                                         data-field="recurrence"
                                         onchange={handleNewScanChange}>
                                     </lightning-combobox>
+                                    <!-- Date de début (obligatoire) -->
+    <lightning-input
+        type="datetime-local"
+        label="Date et heure de début {requiredStar}"
+        value={newScanConfig.startDateTime}
+        data-field="startDateTime"
+        required
+        onchange={handleNewScanChange}>
+    </lightning-input>
+    
+    <!-- Date de fin (optionnelle) -->
+    <lightning-input
+        type="datetime-local"
+        label="Date de fin (optionnelle)"
+        value={newScanConfig.endDateTime}
+        data-field="endDateTime"
+        onchange={handleNewScanChange}>
+    </lightning-input>
                                 </template>
 
                                 <lightning-input
@@ -306,6 +464,19 @@
                                     data-field="sendReport"
                                     onchange={handleNewScanChange}>
                                 </lightning-input>
+
+                                <!-- Champ email (apparaît si le toggle est activé) -->
+                                <template if:true={newScanConfig.sendReport}>
+                                    <lightning-input
+                                        type="email"
+                                        label="Destinataires (séparés par des virgules)"
+                                        placeholder="exemple@domaine.com, autre@domaine.com"
+                                        value={newScanConfig.emailRecipients}
+                                        data-field="emailRecipients"
+                                        onchange={handleNewScanChange}>
+                                    </lightning-input>
+                                </template>
+                                
                             </div>
                         </template>
                     </div>
@@ -364,6 +535,7 @@
                                         </td>
                                         <td><span class="slds-badge {group.statusClass}">{group.statusLabel}</span></td>
                                         <td>
+                                            <div class="action-btns">
                                             <lightning-button-icon
                                                 icon-name="utility:preview"
                                                 variant="border-filled"
@@ -372,6 +544,15 @@
                                                 data-group-id={group.id}
                                                 onclick={handlePreviewGroup}>
                                             </lightning-button-icon>
+                                            <lightning-button-icon
+                                                icon-name="utility:merge"
+                                                variant="border-filled"
+                                                size="small"
+                                                title="Fusionner"
+                                                data-group-id={group.id}
+                                                onclick={handleMergeGroup}>
+                                            </lightning-button-icon>
+                                            </div>
                                         </td>
                                     </tr>
                                 </template>
@@ -528,41 +709,86 @@
             <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
 
-        <!-- ========== MODAL : PRÉVISUALISATION DES DOUBLONS ========== -->
+               <!-- ========== MODAL : PRÉVISUALISATION ET FUSION DES DOUBLONS ========== -->
         <template if:true={showPreviewModal}>
             <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large" aria-modal="true">
-                <div class="slds-modal__container">
+                <div class="slds-modal__container slds-modal__container_extra-large">
                     <header class="slds-modal__header">
                         <button class="slds-button slds-button_icon slds-modal__close" onclick={handleClosePreviewModal}>
                             <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
                         </button>
-                        <h2 class="slds-modal__title">Prévisualisation - {previewGroupName}</h2>
+                        <h2 class="slds-modal__title">Fusion des doublons - {previewGroupName}</h2>
                     </header>
                     <div class="slds-modal__content slds-var-p-around_medium">
-                        <div class="preview-grid">
-                            <template for:each={previewGroupRecords} for:item="record">
-                                <div key={record.id} class="preview-record-card">
-                                    <div class="preview-record-header">
-                                        <lightning-icon icon-name="utility:record" size="x-small"></lightning-icon>
-                                        <span class="preview-record-name">{record.name}</span>
-                                        <span class="slds-badge {record.isMaster ? 'slds-theme_success' : 'slds-theme_warning'}">
-                                            {record.isMaster ? 'Principal' : 'Doublon'}
-                                        </span>
+                        <div class="preview-merge-container">
+                            <!-- Colonne gauche : Liste des enregistrements avec leurs champs -->
+                            <div class="preview-records-column">
+                                <h3 class="preview-column-title">Enregistrements sources</h3>
+                                <template for:each={previewGroupRecords} for:item="record">
+                                    <div key={record.id} class="preview-record-card">
+                                        <div class="preview-record-header">
+                                            <lightning-icon icon-name="utility:record" size="x-small"></lightning-icon>
+                                            <span class="preview-record-name">{record.name}</span>
+                                            <span class="slds-badge {record.isMaster ? 'slds-theme_success' : 'slds-theme_warning'}">
+                                                {record.isMaster ? 'Principal' : 'Doublon'}
+                                            </span>
+                                        </div>
+                                        <div class="preview-record-fields">
+                                            <template for:each={record.fields} for:item="field">
+                                                <div key={field.id} class="preview-field-row" data-field-id={field.id} data-record-id={record.id}>
+                                                    <span class="preview-field-label">{field.label}</span>
+                                                    <div class="preview-field-value-wrapper">
+                                                        <span class="preview-field-value">{field.value || '—'}</span>
+                                                        <lightning-button-icon
+                                                            icon-name="utility:check"
+                                                            variant="border-filled"
+                                                            size="x-small"
+                                                            title="Utiliser cette valeur"
+                                                            data-field-id={field.id}
+                                                            data-record-id={record.id}
+                                                            data-field-label={field.label}
+                                                            data-field-value={field.value}
+                                                            onclick={handleSelectMergeValue}>
+                                                        </lightning-button-icon>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
                                     </div>
-                                    <div class="preview-record-fields">
-                                        <template for:each={record.fields} for:item="field">
-                                            <div key={field.id} class="preview-field-row">
-                                                <span class="preview-field-label">{field.label}</span>
-                                                <span class="preview-field-value">{field.value || '—'}</span>
+                                </template>
+                            </div>
+
+                            <!-- Colonne droite : Aperçu du résultat de fusion -->
+                            <div class="preview-result-column">
+                                <h3 class="preview-column-title">Résultat de la fusion</h3>
+                                <div class="merge-result-card">
+                                    <div class="merge-result-header">
+                                        <lightning-icon icon-name="utility:merge" size="x-small"></lightning-icon>
+                                        <span>Enregistrement final</span>
+                                    </div>
+                                    <div class="merge-result-fields">
+                                        <template for:each={mergeResultFields} for:item="field">
+                                            <div key={field.id} class="merge-field-row">
+                                                <span class="merge-field-label">{field.label}</span>
+                                                <span class="merge-field-value">
+                                                    <template if:true={field.value}>
+                                                        {field.value}
+                                                    </template>
+                                                    <template if:false={field.value}>
+                                                        <span class="empty-value">—</span>
+                                                    </template>
+                                                </span>
+                                                <span class="merge-field-source">({field.sourceLabel})</span>
                                             </div>
                                         </template>
                                     </div>
                                 </div>
-                            </template>
+                            </div>
                         </div>
                     </div>
                     <footer class="slds-modal__footer">
-                        <lightning-button label="Fermer" onclick={handleClosePreviewModal}></lightning-button>
+                        <lightning-button label="Annuler" onclick={handleClosePreviewModal}></lightning-button>
+                        <lightning-button variant="brand" label="Fusionner" icon-name="utility:merge" onclick={handleConfirmMergeFromPreview}></lightning-button>
                     </footer>
                 </div>
             </section>
